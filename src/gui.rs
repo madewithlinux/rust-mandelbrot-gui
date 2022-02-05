@@ -13,13 +13,14 @@ pub(crate) struct Framework {
     paint_jobs: Vec<ClippedMesh>,
 
     // State for the GUI
-    gui: Gui,
+    pub gui: Gui,
 }
 
 /// Example application state. A real application will need a lot more state than this.
-struct Gui {
+pub struct Gui {
     /// Only show the egui window when true.
     window_open: bool,
+    pub speed: usize,
 }
 
 impl Framework {
@@ -110,7 +111,7 @@ impl Framework {
 impl Gui {
     /// Create a `Gui`.
     fn new() -> Self {
-        Self { window_open: true }
+        Self { window_open: true, speed: 1, }
     }
 
     /// Create the UI using egui.
@@ -132,6 +133,9 @@ impl Gui {
                 ui.label("This example demonstrates using egui with pixels.");
                 ui.label("Made with 💖 in San Francisco!");
 
+                ui.separator();
+                // ui.label("speed");
+                ui.add(egui::Slider::new(&mut self.speed, 0..=10).text("speed"));
                 ui.separator();
 
                 ui.horizontal(|ui| {
