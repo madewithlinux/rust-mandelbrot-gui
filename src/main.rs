@@ -1,7 +1,9 @@
+mod fractal_worker;
 mod gui;
 
 use crate::gui::Framework;
 use anyhow::{Context, Result};
+use fractal_worker::FractalWorker;
 use log::{debug, error};
 use pixels::{Error, Pixels, SurfaceTexture};
 use winit::{
@@ -49,25 +51,11 @@ fn main(args: Args) -> Result<()> {
     };
 
     let mut frame_number: usize = 0;
+    let mut drag_start = (0, 0);
+    let mut offset = (0, 0);
+    let mut worker = FractalWorker::new(WIDTH, HEIGHT);
 
     event_loop.run(move |event, _, control_flow| {
-        // // The one and only event that winit_input_helper doesn't have for us...
-        // if let Event::RedrawRequested(_) = event {
-        //     // TODO: render something
-        //     draw(frame_number, pixels.get_frame());
-        //     frame_number += 1;
-        //     if pixels
-        //         .render()
-        //         .map_err(|e| error!("pixels.render() failed: {}", e))
-        //         .is_err()
-        //     {
-        //         *control_flow = ControlFlow::Exit;
-        //         return;
-        //     }
-        // }
-
-        // For everything else, for let winit_input_helper collect events to build its state.
-        // It returns `true` when it is time to update our game state and request a redraw.
         if input.update(&event) {
             // Close events
             if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
@@ -91,33 +79,31 @@ fn main(args: Args) -> Result<()> {
                 framework.resize(size.width, size.height);
             }
 
-            // Handle mouse. This is a bit involved since support some simple
-            // line drawing (mostly because it makes nice looking patterns).
-            let (mouse_cell, mouse_prev_cell) = input
-                .mouse()
-                .map(|(mx, my)| {
-                    let (dx, dy) = input.mouse_diff();
-                    let prev_x = mx - dx;
-                    let prev_y = my - dy;
-
+            if input.mouse_pressed(0) {
+                if let Some(mouse_pos) = input.mouse().map(|pos| {
                     let (mx_i, my_i) = pixels
-                        .window_pos_to_pixel((mx, my))
+                        .window_pos_to_pixel(pos)
                         .unwrap_or_else(|pos| pixels.clamp_pixel_pos(pos));
-
-                    let (px_i, py_i) = pixels
-                        .window_pos_to_pixel((prev_x, prev_y))
+                    (mx_i as i32, my_i as i32)
+                }) {
+                    drag_start = mouse_pos;
+                }
+            }
+            if input.mouse_held(0) {
+                if let Some(mouse_pos) = input.mouse().map(|pos| {
+                    let (mx_i, my_i) = pixels
+                        .window_pos_to_pixel(pos)
                         .unwrap_or_else(|pos| pixels.clamp_pixel_pos(pos));
+                    (mx_i as i32, my_i as i32)
+                }) {
+                    offset = (mouse_pos.0 - drag_start.0, mouse_pos.1 - drag_start.1);
+                }
+            }
+            if input.mouse_released(0) {
+                drag_start = (0, 0);
+                offset = (0, 0);
+            }
 
-                    (
-                        (mx_i as isize, my_i as isize),
-                        (px_i as isize, py_i as isize),
-                    )
-                })
-                .unwrap_or_default();
-
-            // if !paused || input.key_pressed(VirtualKeyCode::Space) {
-            //     life.update();
-            // }
             window.request_redraw();
         }
 
@@ -128,10 +114,13 @@ fn main(args: Args) -> Result<()> {
             }
             // Draw the current frame
             Event::RedrawRequested(_) => {
-                // Draw the world
-                draw(frame_number, pixels.get_frame());
-                // frame_number += 1;
-                frame_number += framework.gui.speed;
+                // // Draw the world
+                // draw(frame_number, pixels.get_frame());
+                // // frame_number += 1;
+                // frame_number += framework.gui.speed;
+                // worker.draw_pending_pixels(pixels.get_frame());
+                worker.receive_into_buf();
+                worker.draw_full_buffer_with_offset(offset.0, offset.1, pixels.get_frame());
 
                 // Prepare egui
                 framework.prepare(&window);
@@ -158,8 +147,6 @@ fn main(args: Args) -> Result<()> {
             _ => (),
         }
     });
-
-    Ok(())
 }
 
 fn draw(frame_number: usize, screen: &mut [u8]) {
@@ -177,13 +164,4 @@ fn draw(frame_number: usize, screen: &mut [u8]) {
             pix.copy_from_slice(&color);
         }
     }
-
-    // for (c, pix) in cells.iter().zip(screen.chunks_exact_mut(4)) {
-    //     let color = if c.alive {
-    //         [0, 0xff, 0xff, 0xff]
-    //     } else {
-    //         [0, 0, c.heat, 0xff]
-    //     };
-    //     pix.copy_from_slice(&color);
-    // }
 }

@@ -111,7 +111,10 @@ impl Framework {
 impl Gui {
     /// Create a `Gui`.
     fn new() -> Self {
-        Self { window_open: true, speed: 1, }
+        Self {
+            window_open: true,
+            speed: 1,
+        }
     }
 
     /// Create the UI using egui.
