@@ -86,6 +86,12 @@ fn main(_args: Args) -> Result<()> {
 
             if !framework.wants_pointer_input() {
                 mouse_drag = mouse_drag.update(&input, &pixels);
+                match mouse_drag {
+                    MouseDragState::Released { offset } => {
+                        worker.apply_offset(offset);
+                    }
+                    _ => {}
+                };
             }
 
             window.request_redraw();

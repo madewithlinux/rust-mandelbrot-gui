@@ -12,8 +12,9 @@ pub struct Cell {
     // pub data: Vec<u8>,
 }
 
-pub trait FractalCellFunc {
+pub trait FractalCellFunc: Clone {
     fn default_for_size(width: u32, height: u32) -> Self;
+    fn get_size(&self) -> (u32, u32);
 
     fn compute_cell(&self, pos: (u32, u32)) -> Cell;
     fn compute_cells(&self, positions: &[(u32, u32)]) -> Vec<Cell> {

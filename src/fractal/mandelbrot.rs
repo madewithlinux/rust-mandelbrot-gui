@@ -1,3 +1,4 @@
+use core_extensions::SelfOps;
 use num::complex::Complex64;
 use num::Zero;
 use std::collections::HashMap;
@@ -16,12 +17,18 @@ pub struct MandelbrotCellFunc {
 }
 
 impl MandelbrotCellFunc {
+    fn pixel_re(&self) -> Complex64 {
+        Complex64::new(self.pixel_size.re, 0.0)
+    }
+    fn pixel_im(&self) -> Complex64 {
+        Complex64::new(0.0, self.pixel_size.im)
+    }
+
     fn pos_to_complex(&self, pos: (u32, u32)) -> Complex64 {
-        self.top_left
-            + Complex64::new(
-                self.pixel_size.re * (pos.0 as f64),
-                self.pixel_size.im * (pos.1 as f64),
-            )
+        self.top_left + self.pixel_re().scale(pos.0 as f64) + self.pixel_im().scale(pos.1 as f64)
+    }
+    fn center_pos(&self) -> (u32, u32) {
+        (self.width / 2, self.height / 2)
     }
 }
 
@@ -35,6 +42,9 @@ impl FractalCellFunc for MandelbrotCellFunc {
             top_left: Complex64::new(-1.0, 1.0),
             pixel_size: Complex64::new(2.0 / (width as f64), -2.0 / (height as f64)),
         }
+    }
+    fn get_size(&self) -> (u32, u32) {
+        (self.width, self.height)
     }
 
     fn compute_cell(&self, pos: (u32, u32)) -> super::Cell {
@@ -72,8 +82,15 @@ impl FractalCellFunc for MandelbrotCellFunc {
         }
     }
 
-    fn with_offset(&self, _offset: (i32, i32)) -> Self {
-        todo!()
+    fn with_offset(&self, offset: (i32, i32)) -> Self {
+        // let center_pos = (self.width/2 + offset.0, (self.height/2 as i32))
+        let complex_offset =
+            self.pixel_re().scale(offset.0 as f64) + self.pixel_im().scale(offset.1 as f64);
+        Self {
+            center: self.center + complex_offset,
+            top_left: self.top_left + complex_offset,
+            ..*self
+        }
     }
 
     fn with_zoom(&self, _zoom: f32) -> Self {
