@@ -4,6 +4,8 @@ use std::{
 };
 
 use core_extensions::ToTime;
+use rust_mandelbrot_gui::fractal::mandelbrot::MandelbrotCellFunc;
+use rust_mandelbrot_gui::fractal::{Cell, FractalCellFunc};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pixel {
@@ -28,19 +30,24 @@ impl FractalWorker {
         let (tx, rx) = channel();
 
         let worker = thread::spawn(move || loop {
-            for i in 0..(width * height) {
-                let pix = Pixel {
-                    x: i % width,
-                    y: i / width,
-                    r: (i % 255) as u8,
-                    g: 0,
-                    b: 0,
-                };
-                if tx.send(pix).is_err() {
-                    println!("worker thread exiting");
-                    return;
+            let fractal_cell_func = MandelbrotCellFunc::default_for_size(width, height);
+
+            for x in 0..width {
+                for y in 0..height {
+                    let cell = fractal_cell_func.compute_cell((x, y));
+                    let pix = Pixel {
+                        x: cell.pos.0,
+                        y: cell.pos.1,
+                        r: cell.rgb.0,
+                        g: cell.rgb.1,
+                        b: cell.rgb.2,
+                    };
+                    if tx.send(pix).is_err() {
+                        println!("worker thread exiting");
+                        return;
+                    }
+                    thread::sleep(1.microseconds());
                 }
-                thread::sleep(3.microseconds());
             }
         });
 
@@ -55,19 +62,10 @@ impl FractalWorker {
 
     pub fn receive_into_buf(&mut self) {
         for pixel in self.pixel_receiver.try_iter() {
-            if pixel.x == 0 && pixel.y == 0 {
-                self.buf.clear();
-            }
+            // if pixel.x == 0 && pixel.y == 0 {
+            //     self.buf.clear();
+            // }
             self.buf.push(pixel);
-        }
-    }
-
-    pub fn draw_pending_pixels(&self, screen: &mut [u8]) {
-        for Pixel { x, y, r, g, b } in self.pixel_receiver.try_iter() {
-            let idx = ((x + y * self.width) * 4) as usize;
-            let color = [r, g, b, 0xff];
-            let pix = &mut screen[idx..idx + 4];
-            pix.copy_from_slice(&color);
         }
     }
 
