@@ -1,11 +1,13 @@
 mod fractal_worker;
 mod gui;
+mod mouse_drag;
 
 use crate::gui::Framework;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use fractal_worker::FractalWorker;
-use log::{debug, error};
-use pixels::{Error, Pixels, SurfaceTexture};
+use log::error;
+use mouse_drag::MouseDragState;
+use pixels::{Pixels, SurfaceTexture};
 use winit::{
     dpi::LogicalSize,
     event::{Event, VirtualKeyCode},
@@ -23,7 +25,7 @@ struct Args {
 }
 
 #[paw::main]
-fn main(args: Args) -> Result<()> {
+fn main(_args: Args) -> Result<()> {
     env_logger::init();
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
@@ -50,9 +52,7 @@ fn main(args: Args) -> Result<()> {
         (pixels, framework)
     };
 
-    let mut frame_number: usize = 0;
-    let mut drag_start = (0, 0);
-    let mut offset = (0, 0);
+    let mut mouse_drag = MouseDragState::new();
     let mut worker = FractalWorker::new(WIDTH, HEIGHT);
 
     event_loop.run(move |event, _, control_flow| {
@@ -79,30 +79,8 @@ fn main(args: Args) -> Result<()> {
                 framework.resize(size.width, size.height);
             }
 
-            if input.mouse_pressed(0) {
-                if let Some(mouse_pos) = input.mouse().map(|pos| {
-                    let (mx_i, my_i) = pixels
-                        .window_pos_to_pixel(pos)
-                        .unwrap_or_else(|pos| pixels.clamp_pixel_pos(pos));
-                    (mx_i as i32, my_i as i32)
-                }) {
-                    drag_start = mouse_pos;
-                }
-            }
-            if input.mouse_held(0) {
-                if let Some(mouse_pos) = input.mouse().map(|pos| {
-                    let (mx_i, my_i) = pixels
-                        .window_pos_to_pixel(pos)
-                        .unwrap_or_else(|pos| pixels.clamp_pixel_pos(pos));
-                    (mx_i as i32, my_i as i32)
-                }) {
-                    offset = (mouse_pos.0 - drag_start.0, mouse_pos.1 - drag_start.1);
-                }
-            }
-            if input.mouse_released(0) {
-                drag_start = (0, 0);
-                offset = (0, 0);
-            }
+            // TODO: don't update this when the input event is for egui
+            mouse_drag = mouse_drag.update(&input, &pixels);
 
             window.request_redraw();
         }
@@ -114,13 +92,15 @@ fn main(args: Args) -> Result<()> {
             }
             // Draw the current frame
             Event::RedrawRequested(_) => {
-                // // Draw the world
-                // draw(frame_number, pixels.get_frame());
-                // // frame_number += 1;
-                // frame_number += framework.gui.speed;
-                // worker.draw_pending_pixels(pixels.get_frame());
                 worker.receive_into_buf();
-                worker.draw_full_buffer_with_offset(offset.0, offset.1, pixels.get_frame());
+                match mouse_drag {
+                    MouseDragState::Dragging { offset, .. } => {
+                        worker.draw_full_buffer_with_offset(offset.0, offset.1, pixels.get_frame());
+                    }
+                    _ => {
+                        worker.draw_full_buffer_with_offset(0, 0, pixels.get_frame());
+                    }
+                };
 
                 // Prepare egui
                 framework.prepare(&window);
@@ -147,21 +127,4 @@ fn main(args: Args) -> Result<()> {
             _ => (),
         }
     });
-}
-
-fn draw(frame_number: usize, screen: &mut [u8]) {
-    for x in 0..WIDTH {
-        for y in 0..HEIGHT {
-            let idx = ((x + y * WIDTH) * 4) as usize;
-            let color = [
-                ((frame_number as u32) + x + y) as u8, //
-                ((frame_number as u32) + x * y) as u8,
-                // ((frame_number as u32) + x / (y + 1)) as u8,
-                ((frame_number as u32) + x * x * y * y) as u8,
-                0xff,
-            ];
-            let pix = &mut screen[idx..idx + 4];
-            pix.copy_from_slice(&color);
-        }
-    }
 }

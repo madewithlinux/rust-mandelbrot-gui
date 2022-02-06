@@ -29,14 +29,17 @@ impl FractalWorker {
 
         let worker = thread::spawn(move || loop {
             for i in 0..(width * height) {
-                tx.send(Pixel {
+                let pix = Pixel {
                     x: i % width,
                     y: i / width,
                     r: (i % 255) as u8,
                     g: 0,
                     b: 0,
-                })
-                .unwrap();
+                };
+                if tx.send(pix).is_err() {
+                    println!("worker thread exiting");
+                    return;
+                }
                 thread::sleep(3.microseconds());
             }
         });
