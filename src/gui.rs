@@ -47,8 +47,12 @@ impl Framework {
     }
 
     /// Handle input events from the window manager.
-    pub(crate) fn handle_event(&mut self, event: &winit::event::WindowEvent) {
-        self.egui_state.on_event(&self.egui_ctx, event);
+    pub(crate) fn handle_event(&mut self, event: &winit::event::WindowEvent) -> bool {
+        self.egui_state.on_event(&self.egui_ctx, event)
+    }
+
+    pub(crate) fn wants_pointer_input(&self) -> bool {
+        self.egui_ctx.wants_pointer_input()
     }
 
     /// Resize egui.

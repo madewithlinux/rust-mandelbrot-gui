@@ -19,7 +19,7 @@ use winit_input_helper::WinitInputHelper;
 const WIDTH: u32 = 400;
 const HEIGHT: u32 = 300;
 
-#[derive(structopt::StructOpt)]
+#[derive(Debug, structopt::StructOpt)]
 struct Args {
     // TODO
 }
@@ -56,6 +56,11 @@ fn main(_args: Args) -> Result<()> {
     let mut worker = FractalWorker::new(WIDTH, HEIGHT);
 
     event_loop.run(move |event, _, control_flow| {
+        // Update egui inputs
+        if let Event::WindowEvent { event, .. } = &event {
+            framework.handle_event(event);
+        }
+
         if input.update(&event) {
             // Close events
             if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
@@ -79,17 +84,14 @@ fn main(_args: Args) -> Result<()> {
                 framework.resize(size.width, size.height);
             }
 
-            // TODO: don't update this when the input event is for egui
-            mouse_drag = mouse_drag.update(&input, &pixels);
+            if !framework.wants_pointer_input() {
+                mouse_drag = mouse_drag.update(&input, &pixels);
+            }
 
             window.request_redraw();
         }
 
         match event {
-            Event::WindowEvent { event, .. } => {
-                // Update egui inputs
-                framework.handle_event(&event);
-            }
             // Draw the current frame
             Event::RedrawRequested(_) => {
                 worker.receive_into_buf();
