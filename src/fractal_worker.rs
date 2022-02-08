@@ -1,12 +1,13 @@
 use std::{
     sync::mpsc::{channel, Receiver, Sender},
-    thread::{self, JoinHandle},
+    thread,
 };
 
 use core_extensions::{SelfOps, ToTime};
-use itertools::Itertools;
+use itertools::{iproduct, Itertools};
+use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use rust_mandelbrot_gui::fractal::mandelbrot::MandelbrotCellFunc;
-use rust_mandelbrot_gui::fractal::{Cell, FractalCellFunc};
+use rust_mandelbrot_gui::fractal::FractalCellFunc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pixel {
@@ -21,33 +22,36 @@ pub struct Pixel {
 pub struct FractalWorker {
     width: u32,
     height: u32,
-    pixel_receiver: Receiver<Pixel>,
-    // worker: JoinHandle<()>,
+    pixel_receiver: Option<Receiver<Pixel>>,
     buf: Vec<Pixel>,
     cell_func: MandelbrotCellFunc,
 }
 
-fn start_worker(cell_func: MandelbrotCellFunc, tx: Sender<Pixel>) {
-    // let tx = tx.clone();
-    // let cell_func = cell_func.clone();
-    let worker = thread::spawn(move || loop {
+const CHUNK_SIZE: usize = 128;
+
+fn start_worker(cell_func: MandelbrotCellFunc, sender: Sender<Pixel>) {
+    rayon::spawn(move || {
         let (width, height) = cell_func.get_size();
-        for x in 0..width {
-            for y in 0..height {
-                let cell = cell_func.compute_cell((x, y));
-                let pix = Pixel {
+        let pixel_positions = iproduct!(0..width, 0..height).collect_vec();
+        let res = pixel_positions
+            .par_chunks(CHUNK_SIZE)
+            .map_with(cell_func, |cell_func, positions| {
+                thread::sleep(4.milliseconds()); // TODO: remove
+                cell_func.compute_cells(positions)
+            })
+            .flatten()
+            .try_for_each_with(sender, |tx, cell| {
+                tx.send(Pixel {
                     x: cell.pos.0,
                     y: cell.pos.1,
                     r: cell.rgb.0,
                     g: cell.rgb.1,
                     b: cell.rgb.2,
-                };
-                if tx.send(pix).is_err() {
-                    println!("worker thread exiting");
-                    return;
-                }
-            }
-            thread::sleep(1.milliseconds());
+                })
+            });
+        match res {
+            Ok(_) => println!("render complete"),
+            Err(_) => println!("render interrupted"),
         }
     });
 }
@@ -62,22 +66,22 @@ impl FractalWorker {
         Self {
             width,
             height,
-            pixel_receiver: rx,
+            pixel_receiver: Some(rx),
             cell_func,
             buf: Default::default(),
         }
     }
 
     pub fn receive_into_buf(&mut self) {
-        for pixel in self.pixel_receiver.try_iter() {
-            // if pixel.x == 0 && pixel.y == 0 {
-            //     self.buf.clear();
-            // }
-            self.buf.push(pixel);
+        if let Some(receiver) = &self.pixel_receiver {
+            for pixel in receiver.try_iter() {
+                self.buf.push(pixel);
+            }
         }
     }
 
     pub fn apply_offset(&mut self, offset: (i32, i32)) {
+        self.pixel_receiver = None;
         let offset = offset.mutated(|p| {
             p.0 *= -1;
             p.1 *= -1;
@@ -104,10 +108,9 @@ impl FractalWorker {
             .collect_vec();
 
         let (tx, rx) = channel();
-
+        self.pixel_receiver = Some(rx);
         self.cell_func = self.cell_func.with_offset(offset);
         start_worker(self.cell_func, tx);
-        self.pixel_receiver = rx;
     }
 
     pub fn draw_full_buffer_with_offset(&self, dx: i32, dy: i32, screen: &mut [u8]) {
