@@ -12,7 +12,7 @@ https://docs.rs/dynamic_reload/latest/dynamic_reload/
 
 
 # TODO
-- [ ] use rayon
+- [x] use rayon
 - [ ] split this cargo project into separate crates for host app, fractal worker, colorizer, and shared code
 - [ ] use https://docs.rs/cglue/latest/cglue/ and https://docs.rs/libloading/latest/libloading/ for loading dynamic lib
 - [ ] use apache arrow for IPC?
