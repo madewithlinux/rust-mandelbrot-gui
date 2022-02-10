@@ -1,0 +1,51 @@
+[package]
+name = "rust-mandelbrot-gui"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+itertools = "0.10"
+rayon = "1"
+crossbeam = "0.8"
+
+png = "0.17"
+palette = "0.6.0"
+rgb = "0.8"
+image = "0.23"
+imageproc = "0.22"
+
+ndarray = { version = "0.15.4", features = ["rayon"] }
+ultraviolet = { version = "0.8", features = [ "f64", "int" ] }
+
+pixels = "0.9.0"
+winit = "0.26.1"
+winit_input_helper = "0.11"
+egui = "0.16"
+egui_wgpu_backend = "0.16"
+egui-winit = { version = "0.16", default-features = false, features = ["links"] }
+
+log = "0.4"
+env_logger = "0.9"
+
+num = "0.4"
+# rug = { version = "1", features = ["float", "complex"] }
+simdeez = "1"
+
+structopt = { version = "0.3.26", features = [ "paw" ] }
+paw = "1"
+
+anyhow = "1"
+
+[dependencies.core_extensions]
+version = "1.5"
+features = [
+    # enables items that use anything from the standard `std` or `alloc` crates.
+    "std",
+    # Requires the latest stable release, enables all the rust-version-dependent features
+    "rust_latest_stable",
+    # enables all the item features 
+    "all_items",
+]
+
