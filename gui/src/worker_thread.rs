@@ -6,8 +6,8 @@ use std::{
 use core_extensions::{SelfOps, ToTime};
 use itertools::{iproduct, Itertools};
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
-use rust_mandelbrot_gui::fractal::mandelbrot::MandelbrotCellFunc;
-use rust_mandelbrot_gui::fractal::FractalCellFunc;
+use mandelbrot_f64::MandelbrotCellFunc;
+use shared::FractalCellFunc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pixel {

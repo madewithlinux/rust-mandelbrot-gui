@@ -1,5 +1,7 @@
 [workspace]
 members = [
     "gui",
+    "shared",
+    "impls/*",
 ]
 resolver = "2"

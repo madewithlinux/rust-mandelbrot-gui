@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use itertools::Itertools;
-pub mod mandelbrot;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Cell {
@@ -30,3 +29,4 @@ pub trait FractalCellFunc: Clone {
     fn with_option(&self, name: &str, value: &str) -> Self;
     fn get_options(&self) -> HashMap<String, String>;
 }
+

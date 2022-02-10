@@ -1,10 +1,10 @@
-mod fractal_worker;
+mod worker_thread;
 mod gui;
 mod mouse_drag;
 
 use crate::gui::Framework;
 use anyhow::Result;
-use fractal_worker::FractalWorker;
+use worker_thread::FractalWorker;
 use log::error;
 use mouse_drag::MouseDragState;
 use pixels::{Pixels, SurfaceTexture};
