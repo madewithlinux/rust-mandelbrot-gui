@@ -1,42 +1,48 @@
-mod worker_thread;
 mod gui;
 mod mouse_drag;
+mod worker_thread;
 
 use crate::gui::Framework;
 use anyhow::Result;
-use worker_thread::FractalWorker;
 use log::error;
 use mouse_drag::MouseDragState;
 use pixels::{Pixels, SurfaceTexture};
 use winit::{
     dpi::LogicalSize,
-    event::{Event, VirtualKeyCode},
+    event::{Event, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
 use winit_input_helper::WinitInputHelper;
+use worker_thread::FractalWorker;
 
-const WIDTH: u32 = 400;
-const HEIGHT: u32 = 300;
+// const width: u32 = 1024;
+// const height: u32 = 1024;
 
 #[derive(Debug, structopt::StructOpt)]
 struct Args {
-    // TODO
+    #[structopt(short, long, default_value="1024")]
+    width: u32,
+    #[structopt(short, long, default_value="1024")]
+    height: u32,
 }
 
 #[paw::main]
-fn main(_args: Args) -> Result<()> {
+fn main(args: Args) -> Result<()> {
+    let Args { width, height } = args;
+
     env_logger::init();
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
 
     let window = {
-        let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
-        let scaled_size = LogicalSize::new(WIDTH as f64 * 3.0, HEIGHT as f64 * 3.0);
+        let size = LogicalSize::new(width as f64, height as f64);
+        // let scaled_size = LogicalSize::new(width as f64 * 3.0, height as f64 * 3.0);
         WindowBuilder::new()
             .with_title("hello world")
-            .with_inner_size(scaled_size)
-            .with_min_inner_size(size)
+            // .with_inner_size(scaled_size)
+            .with_inner_size(size)
+            // .with_min_inner_size(size)
             .build(&event_loop)
             .unwrap()
     };
@@ -44,8 +50,9 @@ fn main(_args: Args) -> Result<()> {
     let (mut pixels, mut framework) = {
         let window_size = window.inner_size();
         let scale_factor = window.scale_factor() as f32;
+        dbg!(scale_factor);
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
-        let pixels = Pixels::new(WIDTH, HEIGHT, surface_texture)?;
+        let pixels = Pixels::new(width, height, surface_texture)?;
         let framework =
             Framework::new(window_size.width, window_size.height, scale_factor, &pixels);
 
@@ -53,7 +60,7 @@ fn main(_args: Args) -> Result<()> {
     };
 
     let mut mouse_drag = MouseDragState::new();
-    let mut worker = FractalWorker::new(WIDTH, HEIGHT);
+    let mut worker = FractalWorker::new(width, height);
 
     event_loop.run(move |event, _, control_flow| {
         // Update egui inputs
@@ -98,6 +105,10 @@ fn main(_args: Args) -> Result<()> {
         }
 
         match event {
+            Event::WindowEvent{event: mouse_wheel_event @ WindowEvent::MouseWheel{..}, ..} => {
+                dbg!(mouse_wheel_event);
+            },
+
             // Draw the current frame
             Event::RedrawRequested(_) => {
                 worker.receive_into_buf();

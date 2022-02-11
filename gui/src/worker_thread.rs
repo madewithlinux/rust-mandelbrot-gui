@@ -115,7 +115,7 @@ impl FractalWorker {
 
     pub fn draw_full_buffer_with_offset(&self, dx: i32, dy: i32, screen: &mut [u8]) {
         for pixel in screen.chunks_exact_mut(4) {
-            pixel[0] = 0x00; // R
+            pixel[0] = 0x50; // R
             pixel[1] = 0x00; // G
             pixel[2] = 0x00; // B
             pixel[3] = 0xff; // A
