@@ -37,3 +37,12 @@ anyhow = "1"
 
 
 core_extensions = { version = "1.5", features = ["integers", "self_ops"]}
+
+# polars = {version = "0.19.1", default_features=false, features=["performant", "rows", "dataframe_arithmetic"]}
+# polars = {version = "0.19.1", default_features=false, features=["performant"]}
+# polars-core = { version = "0.19.1", default_features=false, features=["performant", "private"] }
+# polars = { version = "0.19.1", features = ["default", "cross_join", "rows", "dataframe_arithmetic"] }
+# polars = { version = "0.19.1"}
+# polars = "0.19.1"
+# arrow = "8.0.0"
+

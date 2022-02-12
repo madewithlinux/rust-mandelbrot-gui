@@ -1,12 +1,18 @@
 use std::sync::mpsc::{channel, Receiver, Sender};
 
+
 use core_extensions::SelfOps;
 use image::{ImageBuffer, Rgba};
-use itertools::{iproduct, Itertools};
+use itertools::{iproduct, Itertools, izip};
 use mandelbrot_f64::MandelbrotCellFunc;
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use shared::FractalCellFunc;
 use ultraviolet::{DVec2, IVec2};
+
+// use arrow::array::UInt32Array;
+// use polars_core::df;
+// use polars_core::prelude::*;
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pixel {
@@ -31,11 +37,27 @@ const CHUNK_SIZE: usize = 128;
 fn start_worker(cell_func: MandelbrotCellFunc, sender: Sender<Pixel>) {
     rayon::spawn(move || {
         let (width, height) = cell_func.get_size();
+        // let xs = df!("x" => (0..width).collect_vec()).expect("x series");
+        // let ys = df!("x" => (0..height).collect_vec()).expect("y series");
+        // let df = xs.cross_join(&ys).expect("join");
+
         let pixel_positions = iproduct!(0..width, 0..height).collect_vec();
         let res = pixel_positions
             .par_chunks(CHUNK_SIZE)
             .map_with(cell_func, |cell_func, positions| {
                 // thread::sleep(4.milliseconds()); // TODO: remove
+                // cell_func.compute_cells(positions)
+                
+                // let xs = UInt32Array::from_iter_values(positions.iter().map(|&(x, _)| x));
+                // let ys = UInt32Array::from_iter_values(positions.iter().map(|&(y, _)| y));
+                // let rbatch = cell_func.compute_cells_arrow(xs, ys);
+                // izip!(
+                //     rbatch.column(rbatch.schema().column_with_name("x").unwrap().0)
+                //     .as_any()
+                //     .downcast_ref::<UInt32Array>()
+                //     .expect("column x incorrect").iter().flatten()
+                // );
+
                 cell_func.compute_cells(positions)
             })
             .flatten()

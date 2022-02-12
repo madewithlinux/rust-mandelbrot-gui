@@ -1,4 +1,4 @@
 # ref https://brokenco.de/2020/01/08/faster-rust-linking.html
 # and https://blog.mozilla.org/nnethercote/2020/04/24/how-to-speed-up-the-rust-compiler-in-2020/
-[build]
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+# [build]
+# rustflags = ["-C", "link-arg=-fuse-ld=lld"]

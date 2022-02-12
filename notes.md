@@ -10,6 +10,7 @@ https://github.com/anirudhb/reloady
 https://docs.rs/live-reload/latest/live_reload/
 https://docs.rs/dynamic_reload/latest/dynamic_reload/
 
+https://docs.rs/polars/latest/polars/
 
 # TODO
 - [x] use rayon
@@ -19,7 +20,8 @@ https://docs.rs/dynamic_reload/latest/dynamic_reload/
   - [x] window resize
   - [x] zoom
   - [x] resize canvas
-- [ ] improve data structure used (maybe polars?)
+- [ ] improve data structure used
+  - [x] maybe polars? no, it's too slow
 - [ ] use https://docs.rs/cglue/latest/cglue/ and https://docs.rs/libloading/latest/libloading/ for loading dynamic lib
 - [ ] use apache arrow for IPC?
 - [ ] use some data frame lib?
