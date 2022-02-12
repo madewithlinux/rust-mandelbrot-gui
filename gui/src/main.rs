@@ -16,9 +16,6 @@ use winit::{
 use winit_input_helper::WinitInputHelper;
 use worker_thread::FractalWorker;
 
-// const width: u32 = 1024;
-// const height: u32 = 1024;
-
 #[derive(Debug, structopt::StructOpt)]
 struct Args {
     #[structopt(short, long, default_value="1024")]
@@ -29,7 +26,8 @@ struct Args {
 
 #[paw::main]
 fn main(args: Args) -> Result<()> {
-    let Args { width, height } = args;
+    let mut width = args.width;
+    let mut height = args.height;
 
     env_logger::init();
     let event_loop = EventLoop::new();
@@ -82,13 +80,18 @@ fn main(args: Args) -> Result<()> {
 
             // Update the scale factor
             if let Some(scale_factor) = input.scale_factor() {
+                dbg!(scale_factor);
                 framework.scale_factor(scale_factor);
             }
 
             // Resize the window
             if let Some(size) = input.window_resized() {
+                dbg!(size);
                 pixels.resize_surface(size.width, size.height);
+                pixels.resize_buffer(size.width, size.height);
                 framework.resize(size.width, size.height);
+                width = size.width;
+                height = size.height;
             }
 
             if !framework.wants_pointer_input() {
@@ -114,10 +117,10 @@ fn main(args: Args) -> Result<()> {
                 worker.receive_into_buf();
                 match mouse_drag {
                     MouseDragState::Dragging { offset, .. } => {
-                        worker.draw_full_buffer_with_offset(offset.0, offset.1, pixels.get_frame());
+                        worker.draw_full_buffer_with_offset(offset.0, offset.1, pixels.get_frame(), width, height);
                     }
                     _ => {
-                        worker.draw_full_buffer_with_offset(0, 0, pixels.get_frame());
+                        worker.draw_full_buffer_with_offset(0, 0, pixels.get_frame(), width, height);
                     }
                 };
 

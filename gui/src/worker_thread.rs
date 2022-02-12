@@ -4,9 +4,10 @@ use std::{
 };
 
 use core_extensions::{SelfOps, ToTime};
+use image::{ImageBuffer, Rgba};
 use itertools::{iproduct, Itertools};
-use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use mandelbrot_f64::MandelbrotCellFunc;
+use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use shared::FractalCellFunc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -113,24 +114,30 @@ impl FractalWorker {
         start_worker(self.cell_func, tx);
     }
 
-    pub fn draw_full_buffer_with_offset(&self, dx: i32, dy: i32, screen: &mut [u8]) {
+    pub fn draw_full_buffer_with_offset(
+        &self,
+        dx: i32,
+        dy: i32,
+        screen: &mut [u8],
+        screen_width: u32,
+        screen_height: u32,
+    ) {
+        // this is much faster than GenericImage::copy_from()
         for pixel in screen.chunks_exact_mut(4) {
-            pixel[0] = 0x50; // R
-            pixel[1] = 0x00; // G
-            pixel[2] = 0x00; // B
-            pixel[3] = 0xff; // A
+            pixel.copy_from_slice(&[0x50, 0x00, 0x00, 0xff]);
         }
+
+        let mut screen_buf =
+            ImageBuffer::<Rgba<u8>, _>::from_raw(screen_width, screen_height, screen)
+                .expect("pixel buffer layout bad");
 
         for Pixel { x, y, r, g, b } in self.buf.iter() {
             let x = *x as i32 + dx;
             let y = *y as i32 + dy;
-            if x < 0 || x >= self.width as i32 || y < 0 || y >= self.height as i32 {
+            if x < 0 || x >= screen_width as i32 || y < 0 || y >= screen_height as i32 {
                 continue;
             }
-            let idx = ((x + y * self.width as i32) * 4) as usize;
-            let color = [*r, *g, *b, 0xff];
-            let pix = &mut screen[idx..idx + 4];
-            pix.copy_from_slice(&color);
+            screen_buf.put_pixel(x as u32, y as u32, Rgba([*r, *g, *b, 0xff]));
         }
     }
 }

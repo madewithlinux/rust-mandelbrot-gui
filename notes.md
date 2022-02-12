@@ -14,7 +14,10 @@ https://docs.rs/dynamic_reload/latest/dynamic_reload/
 # TODO
 - [x] use rayon
 - [x] split this cargo project into separate crates for host app, fractal worker, colorizer, and shared code
-- [ ] implement zoom
+- [x] use image FFI view thingy to set pixels in buffer
+- [ ] implement UI features
+  - [x] window resize
+  - [ ] zoom
 - [ ] use https://docs.rs/cglue/latest/cglue/ and https://docs.rs/libloading/latest/libloading/ for loading dynamic lib
 - [ ] use apache arrow for IPC?
 - [ ] use some data frame lib?
