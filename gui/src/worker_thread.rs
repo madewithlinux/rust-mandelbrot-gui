@@ -1,14 +1,14 @@
 use std::{
     sync::mpsc::{channel, Receiver, Sender},
-    thread,
 };
 
-use core_extensions::{SelfOps, ToTime};
+use core_extensions::SelfOps;
 use image::{ImageBuffer, Rgba};
 use itertools::{iproduct, Itertools};
 use mandelbrot_f64::MandelbrotCellFunc;
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 use shared::FractalCellFunc;
+use ultraviolet::{DVec2, IVec2};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pixel {
@@ -37,7 +37,7 @@ fn start_worker(cell_func: MandelbrotCellFunc, sender: Sender<Pixel>) {
         let res = pixel_positions
             .par_chunks(CHUNK_SIZE)
             .map_with(cell_func, |cell_func, positions| {
-                thread::sleep(4.milliseconds()); // TODO: remove
+                // thread::sleep(4.milliseconds()); // TODO: remove
                 cell_func.compute_cells(positions)
             })
             .flatten()
@@ -81,8 +81,48 @@ impl FractalWorker {
         }
     }
 
-    pub fn apply_offset(&mut self, offset: (i32, i32)) {
+    fn stop_worker(&mut self) {
         self.pixel_receiver = None;
+    }
+    fn start_new_worker(&mut self, cell_func: MandelbrotCellFunc) {
+        self.stop_worker();
+        let (tx, rx) = channel();
+        self.pixel_receiver = Some(rx);
+        self.cell_func = cell_func;
+        start_worker(self.cell_func, tx);
+    }
+
+    // TODO: resize
+
+    pub fn apply_zoom(&mut self, mouse_wheel: f32) {
+        self.stop_worker();
+
+        let zoom_factor = if mouse_wheel > 0.0 { 1.1 } else { 1.0 / 1.1 };
+        let middle = DVec2::new(self.width as f64, self.height as f64) / 2.0;
+        self.buf = self
+            .buf
+            .iter()
+            .flat_map(|&p| {
+                let pos = DVec2::new(p.x as f64, p.y as f64);
+                let IVec2 { x, y } = (middle + (pos - middle) * zoom_factor).try_into().unwrap();
+                if x < 0 || x >= self.width as i32 || y < 0 || y >= self.height as i32 {
+                    None
+                } else {
+                    Some(Pixel {
+                        x: x as u32,
+                        y: y as u32,
+                        ..p
+                    })
+                }
+            })
+            .collect_vec();
+
+        self.start_new_worker(self.cell_func.add_zoom(zoom_factor));
+    }
+
+    pub fn apply_offset(&mut self, offset: (i32, i32)) {
+        self.stop_worker();
+
         let offset = offset.mutated(|p| {
             p.0 *= -1;
             p.1 *= -1;
@@ -91,27 +131,22 @@ impl FractalWorker {
         self.buf = self
             .buf
             .iter()
-            .flat_map(|Pixel { x, y, r, g, b }| {
-                let x = *x as i32 - dx;
-                let y = *y as i32 - dy;
+            .flat_map(|&p| {
+                let x = p.x as i32 - dx;
+                let y = p.y as i32 - dy;
                 if x < 0 || x >= self.width as i32 || y < 0 || y >= self.height as i32 {
                     None
                 } else {
                     Some(Pixel {
                         x: x as u32,
                         y: y as u32,
-                        r: *r,
-                        g: *g,
-                        b: *b,
+                        ..p
                     })
                 }
             })
             .collect_vec();
 
-        let (tx, rx) = channel();
-        self.pixel_receiver = Some(rx);
-        self.cell_func = self.cell_func.with_offset(offset);
-        start_worker(self.cell_func, tx);
+        self.start_new_worker(self.cell_func.with_offset(offset));
     }
 
     pub fn draw_full_buffer_with_offset(

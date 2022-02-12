@@ -14,17 +14,18 @@ pub struct Cell {
 pub trait FractalCellFunc: Clone {
     fn default_for_size(width: u32, height: u32) -> Self;
     fn get_size(&self) -> (u32, u32);
-
+    
     fn compute_cell(&self, pos: (u32, u32)) -> Cell;
     fn compute_cells(&self, positions: &[(u32, u32)]) -> Vec<Cell> {
         positions
-            .iter()
-            .map(|&pos| self.compute_cell(pos))
-            .collect_vec()
+        .iter()
+        .map(|&pos| self.compute_cell(pos))
+        .collect_vec()
     }
-
+    
+    fn with_size(&self, size: (u32, u32)) -> Self;
     fn with_offset(&self, offset: (i32, i32)) -> Self;
-    fn with_zoom(&self, zoom: f32) -> Self;
+    fn add_zoom(&self, zoom_factor: f64) -> Self;
 
     fn with_option(&self, name: &str, value: &str) -> Self;
     fn get_options(&self) -> HashMap<String, String>;

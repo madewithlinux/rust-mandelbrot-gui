@@ -1599,6 +1599,7 @@ dependencies = [
  "rayon",
  "shared",
  "structopt",
+ "ultraviolet",
  "winit",
  "winit_input_helper",
 ]

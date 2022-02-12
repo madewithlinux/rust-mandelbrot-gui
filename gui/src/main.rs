@@ -9,7 +9,7 @@ use mouse_drag::MouseDragState;
 use pixels::{Pixels, SurfaceTexture};
 use winit::{
     dpi::LogicalSize,
-    event::{Event, VirtualKeyCode, WindowEvent},
+    event::{Event, MouseScrollDelta, TouchPhase, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
@@ -18,9 +18,9 @@ use worker_thread::FractalWorker;
 
 #[derive(Debug, structopt::StructOpt)]
 struct Args {
-    #[structopt(short, long, default_value="1024")]
+    #[structopt(short, long, default_value = "1024")]
     width: u32,
-    #[structopt(short, long, default_value="1024")]
+    #[structopt(short, long, default_value = "1024")]
     height: u32,
 }
 
@@ -108,19 +108,40 @@ fn main(args: Args) -> Result<()> {
         }
 
         match event {
-            Event::WindowEvent{event: mouse_wheel_event @ WindowEvent::MouseWheel{..}, ..} => {
-                dbg!(mouse_wheel_event);
-            },
+            Event::WindowEvent {
+                event:
+                    WindowEvent::MouseWheel {
+                        delta: MouseScrollDelta::LineDelta(x, y),
+                        phase: TouchPhase::Moved,
+                        ..
+                    },
+                ..
+            } if x.abs() < 0.1 => {
+                println!("scroll delta: {}", y);
+                worker.apply_zoom(y);
+            }
 
             // Draw the current frame
             Event::RedrawRequested(_) => {
                 worker.receive_into_buf();
                 match mouse_drag {
                     MouseDragState::Dragging { offset, .. } => {
-                        worker.draw_full_buffer_with_offset(offset.0, offset.1, pixels.get_frame(), width, height);
+                        worker.draw_full_buffer_with_offset(
+                            offset.0,
+                            offset.1,
+                            pixels.get_frame(),
+                            width,
+                            height,
+                        );
                     }
                     _ => {
-                        worker.draw_full_buffer_with_offset(0, 0, pixels.get_frame(), width, height);
+                        worker.draw_full_buffer_with_offset(
+                            0,
+                            0,
+                            pixels.get_frame(),
+                            width,
+                            height,
+                        );
                     }
                 };
 

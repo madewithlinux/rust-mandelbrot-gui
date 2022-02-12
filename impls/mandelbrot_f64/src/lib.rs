@@ -79,6 +79,15 @@ impl FractalCellFunc for MandelbrotCellFunc {
         }
     }
 
+    fn with_size(&self, size: (u32, u32)) -> Self {
+        let (width, height) = size;
+        // center doesn't change, just top-left
+        let middle = self.pos_to_complex((width / 2, height / 2));
+        let top_left = middle - self.pixel_re() * ((self.width / 2) as f64)
+            + self.pixel_im() * ((self.height / 2) as f64);
+        Self { top_left, ..*self }
+    }
+
     fn with_offset(&self, offset: (i32, i32)) -> Self {
         let complex_offset =
             self.pixel_re().scale(offset.0 as f64) + self.pixel_im().scale(offset.1 as f64);
@@ -89,8 +98,19 @@ impl FractalCellFunc for MandelbrotCellFunc {
         }
     }
 
-    fn with_zoom(&self, _zoom: f32) -> Self {
-        todo!()
+    fn add_zoom(&self, zoom_factor: f64) -> Self {
+        let middle = self.pos_to_complex((self.width / 2, self.height / 2));
+        let pixel_size = self.pixel_size.scale(1.0 / zoom_factor);
+        let top_left = middle
+            + Complex64::new(
+                -pixel_size.re * ((self.width / 2) as f64),
+                -pixel_size.im * ((self.height / 2) as f64),
+            );
+        Self {
+            top_left,
+            pixel_size,
+            ..*self
+        }
     }
 
     fn with_option(&self, _name: &str, _value: &str) -> Self {
