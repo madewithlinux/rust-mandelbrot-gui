@@ -15,9 +15,11 @@ https://docs.rs/dynamic_reload/latest/dynamic_reload/
 - [x] use rayon
 - [x] split this cargo project into separate crates for host app, fractal worker, colorizer, and shared code
 - [x] use image FFI view thingy to set pixels in buffer
-- [ ] implement UI features
+- [x] implement UI features
   - [x] window resize
-  - [ ] zoom
+  - [x] zoom
+  - [x] resize canvas
+- [ ] improve data structure used (maybe polars?)
 - [ ] use https://docs.rs/cglue/latest/cglue/ and https://docs.rs/libloading/latest/libloading/ for loading dynamic lib
 - [ ] use apache arrow for IPC?
 - [ ] use some data frame lib?

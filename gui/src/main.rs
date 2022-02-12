@@ -92,6 +92,7 @@ fn main(args: Args) -> Result<()> {
                 framework.resize(size.width, size.height);
                 width = size.width;
                 height = size.height;
+                worker.apply_resize((width, height));
             }
 
             if !framework.wants_pointer_input() {

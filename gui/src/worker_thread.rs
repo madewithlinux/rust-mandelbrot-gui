@@ -1,6 +1,4 @@
-use std::{
-    sync::mpsc::{channel, Receiver, Sender},
-};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 use core_extensions::SelfOps;
 use image::{ImageBuffer, Rgba};
@@ -92,7 +90,34 @@ impl FractalWorker {
         start_worker(self.cell_func, tx);
     }
 
-    // TODO: resize
+    pub fn apply_resize(&mut self, size: (u32, u32)) {
+        self.stop_worker();
+
+        let old_middle = IVec2::new(self.width as i32, self.height as i32) / 2;
+        let (new_width, new_height) = size;
+        let new_middle = IVec2::new(new_width as i32, new_height as i32) / 2;
+        self.buf = self
+            .buf
+            .iter()
+            .flat_map(|&p| {
+                let pos = IVec2::new(p.x as i32, p.y as i32);
+                let IVec2 { x, y } = (new_middle + (pos - old_middle)).try_into().unwrap();
+                if x < 0 || x >= new_width as i32 || y < 0 || y >= new_height as i32 {
+                    None
+                } else {
+                    Some(Pixel {
+                        x: x as u32,
+                        y: y as u32,
+                        ..p
+                    })
+                }
+            })
+            .collect_vec();
+        self.width = new_width;
+        self.height = new_height;
+
+        self.start_new_worker(self.cell_func.with_size(size));
+    }
 
     pub fn apply_zoom(&mut self, mouse_wheel: f32) {
         self.stop_worker();

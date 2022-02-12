@@ -81,11 +81,17 @@ impl FractalCellFunc for MandelbrotCellFunc {
 
     fn with_size(&self, size: (u32, u32)) -> Self {
         let (width, height) = size;
-        // center doesn't change, just top-left
-        let middle = self.pos_to_complex((width / 2, height / 2));
-        let top_left = middle - self.pixel_re() * ((self.width / 2) as f64)
-            + self.pixel_im() * ((self.height / 2) as f64);
-        Self { top_left, ..*self }
+        // middle doesn't change, just top-left
+        let middle = self.pos_to_complex((self.width / 2, self.height / 2));
+        let top_left = middle
+            - self.pixel_re() * ((width / 2) as f64)
+            - self.pixel_im() * ((height / 2) as f64);
+        Self {
+            width,
+            height,
+            top_left,
+            ..*self
+        }
     }
 
     fn with_offset(&self, offset: (i32, i32)) -> Self {
