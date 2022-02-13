@@ -35,7 +35,7 @@ impl Framework {
         };
         let rpass = RenderPass::new(pixels.device(), pixels.render_texture_format(), 1);
         let gui = Gui::new();
-
+ 
         Self {
             egui_ctx,
             egui_state,

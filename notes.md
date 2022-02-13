@@ -10,7 +10,18 @@ https://github.com/anirudhb/reloady
 https://docs.rs/live-reload/latest/live_reload/
 https://docs.rs/dynamic_reload/latest/dynamic_reload/
 
+https://docs.rs/pixels/latest/pixels/
+  https://github.com/parasyte/pixels/tree/main/examples/minimal-sdl2
+https://docs.rs/minifb/latest/minifb/
+
+https://docs.rs/imgui/0.8.0/imgui/
+  https://docs.rs/imgui-ext/0.3.0/imgui_ext/
+
 https://docs.rs/polars/latest/polars/
+
+
+
+
 
 # TODO
 - [x] use rayon
@@ -20,6 +31,8 @@ https://docs.rs/polars/latest/polars/
   - [x] window resize
   - [x] zoom
   - [x] resize canvas
+- [x] switch to minifb to see if that's faster
+  * it's great but it doesn't look like there's any easy way to add a gui...
 - [ ] improve data structure used
   - [x] maybe polars? no, it's too slow
 - [ ] use https://docs.rs/cglue/latest/cglue/ and https://docs.rs/libloading/latest/libloading/ for loading dynamic lib
@@ -29,4 +42,22 @@ https://docs.rs/polars/latest/polars/
   * https://docs.rs/polars/latest/polars/
 
 
+
+# compile time
+
+```bash
+cargo bloat -n 10
+cargo bloat --crates -n 10
+cargo bloat --release -n 10
+cargo bloat --release --crates -n 10
+```
+
+https://matklad.github.io/2021/09/04/fast-rust-builds.html
+
+https://github.com/dtolnay/cargo-llvm-lines
+```bash
+cd gui/
+cargo llvm-lines --release --bin rust-mandelbrot-gui | head -n 12
+cargo llvm-lines --bin rust-mandelbrot-gui | head -n 12
+```
 
