@@ -1,7 +1,7 @@
-mod gui;
+mod gui_framework;
 mod mouse_drag;
 
-use crate::gui::Framework;
+use crate::gui_framework::Framework;
 use anyhow::Result;
 use log::error;
 use mouse_drag::MouseDragState;
@@ -21,7 +21,7 @@ struct Args {
     width: u32,
     #[structopt(short, long, default_value = "1024")]
     height: u32,
-    
+
     #[structopt(short, long)]
     lib_path: String,
 }
@@ -30,6 +30,7 @@ struct Args {
 fn main(args: Args) -> Result<()> {
     let mut width = args.width;
     let mut height = args.height;
+    let lib_path = args.lib_path;
 
     env_logger::init();
     let event_loop = EventLoop::new();
@@ -60,7 +61,7 @@ fn main(args: Args) -> Result<()> {
     };
 
     let mut mouse_drag = MouseDragState::new();
-    let mut worker = FractalWorker::new(width, height, &args.lib_path);
+    let mut worker = FractalWorker::new(width, height, &lib_path);
 
     event_loop.run(move |event, _, control_flow| {
         // Update egui inputs
@@ -79,6 +80,9 @@ fn main(args: Args) -> Result<()> {
                 *control_flow = ControlFlow::Exit;
                 return;
             }
+            // if input.key_pressed(VirtualKeyCode::F) {
+            //     framework.gui.window_open = false;
+            // }
 
             // Update the scale factor
             if let Some(scale_factor) = input.scale_factor() {
@@ -148,8 +152,15 @@ fn main(args: Args) -> Result<()> {
                     }
                 };
 
-                // Prepare egui
-                framework.prepare(&window);
+                // Prepare egui (including render UI)
+                framework.prepare(&window, |ctx| {
+                    egui::Window::new("mandelbrot gui").show(&ctx, |ui| {
+                        ui.label("Hello world!");
+                        if ui.button("Click me").clicked() {
+                            println!("clicked")
+                        }
+                    });
+                });
 
                 // Render everything together
                 let render_result = pixels.render_with(|encoder, render_target, context| {

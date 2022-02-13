@@ -1,8 +1,8 @@
 [workspace]
 members = [
     "gui",
-    "gui-sdl2",
-    "gui-imgui",
+    # "gui-sdl2",
+    # "gui-imgui",
     "worker",
     "shared",
     "impls/*",

@@ -81,6 +81,10 @@ impl FractalWorker {
         }
     }
 
+    pub fn reload_library(&mut self, lib_path: &str) {
+        println!("TODO: reload the library")
+    }
+
     pub fn receive_into_buf(&mut self) {
         if let Some(receiver) = &self.pixel_receiver {
             for pixel in receiver.try_iter() {

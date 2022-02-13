@@ -11,16 +11,6 @@ pub(crate) struct Framework {
     screen_descriptor: ScreenDescriptor,
     rpass: RenderPass,
     paint_jobs: Vec<ClippedMesh>,
-
-    // State for the GUI
-    pub gui: Gui,
-}
-
-/// Example application state. A real application will need a lot more state than this.
-pub struct Gui {
-    /// Only show the egui window when true.
-    window_open: bool,
-    pub speed: usize,
 }
 
 impl Framework {
@@ -34,15 +24,13 @@ impl Framework {
             scale_factor,
         };
         let rpass = RenderPass::new(pixels.device(), pixels.render_texture_format(), 1);
-        let gui = Gui::new();
- 
+
         Self {
             egui_ctx,
             egui_state,
             screen_descriptor,
             rpass,
             paint_jobs: Vec::new(),
-            gui,
         }
     }
 
@@ -69,13 +57,10 @@ impl Framework {
     }
 
     /// Prepare egui.
-    pub(crate) fn prepare(&mut self, window: &Window) {
+    pub(crate) fn prepare(&mut self, window: &Window, run_ui: impl FnOnce(&CtxRef)) {
         // Run the egui frame and create all paint jobs to prepare for rendering.
         let raw_input = self.egui_state.take_egui_input(window);
-        let (output, paint_commands) = self.egui_ctx.run(raw_input, |egui_ctx| {
-            // Draw the demo application.
-            self.gui.ui(egui_ctx);
-        });
+        let (output, paint_commands) = self.egui_ctx.run(raw_input, run_ui);
 
         self.egui_state
             .handle_output(window, &self.egui_ctx, output);
@@ -109,47 +94,5 @@ impl Framework {
             &self.screen_descriptor,
             None,
         )
-    }
-}
-
-impl Gui {
-    /// Create a `Gui`.
-    fn new() -> Self {
-        Self {
-            window_open: true,
-            speed: 1,
-        }
-    }
-
-    /// Create the UI using egui.
-    fn ui(&mut self, ctx: &CtxRef) {
-        egui::TopBottomPanel::top("menubar_container").show(ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("About...").clicked() {
-                        self.window_open = true;
-                        ui.close_menu();
-                    }
-                })
-            });
-        });
-
-        egui::Window::new("Hello, egui!")
-            .open(&mut self.window_open)
-            .show(ctx, |ui| {
-                ui.label("This example demonstrates using egui with pixels.");
-                ui.label("Made with 💖 in San Francisco!");
-
-                ui.separator();
-                // ui.label("speed");
-                ui.add(egui::Slider::new(&mut self.speed, 0..=10).text("speed"));
-                ui.separator();
-
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x /= 2.0;
-                    ui.label("Learn more about egui at");
-                    ui.hyperlink("https://docs.rs/egui");
-                });
-            });
     }
 }
