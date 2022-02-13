@@ -1,12 +1,16 @@
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::{
+    path::Path,
+    sync::mpsc::{channel, Receiver, Sender},
+};
 
+use abi_stable::{library::RootModule, std_types::RSlice};
 use core_extensions::SelfOps;
 use image::{ImageBuffer, Rgba};
 use itertools::{iproduct, Itertools};
-use mandelbrot_f64::MandelbrotCellFunc;
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
-use shared::FractalCellFunc;
 use ultraviolet::{DVec2, IVec2};
+
+use shared::{FractalLib_Ref, RFractalCellFuncBox, Tuple2};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pixel {
@@ -17,25 +21,27 @@ pub struct Pixel {
     b: u8,
 }
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct FractalWorker {
     width: u32,
     height: u32,
     pixel_receiver: Option<Receiver<Pixel>>,
     buf: Vec<Pixel>,
-    cell_func: MandelbrotCellFunc,
+    cell_func: RFractalCellFuncBox,
 }
 
 const CHUNK_SIZE: usize = 128;
 
-fn start_worker(cell_func: MandelbrotCellFunc, sender: Sender<Pixel>) {
+fn start_worker(cell_func: RFractalCellFuncBox, sender: Sender<Pixel>) {
     rayon::spawn(move || {
-        let (width, height) = cell_func.get_size();
-        let pixel_positions = iproduct!(0..width, 0..height).collect_vec();
+        let (width, height) = cell_func.get_size().into();
+        let pixel_positions = iproduct!(0..width, 0..height)
+            .map(Tuple2::from)
+            .collect_vec();
         let res = pixel_positions
             .par_chunks(CHUNK_SIZE)
             .map_with(cell_func, |cell_func, positions| {
-                cell_func.compute_cells(positions)
+                cell_func.compute_cells(RSlice::from(positions)).into_vec()
             })
             .flatten()
             .try_for_each_with(sender, |tx, cell| {
@@ -55,11 +61,16 @@ fn start_worker(cell_func: MandelbrotCellFunc, sender: Sender<Pixel>) {
 }
 
 impl FractalWorker {
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(width: u32, height: u32, lib_path: &str) -> Self {
         let (tx, rx) = channel();
 
-        let cell_func = MandelbrotCellFunc::default_for_size(width, height);
-        start_worker(cell_func, tx);
+        let fractal_lib: FractalLib_Ref =
+            FractalLib_Ref::load_from_file(Path::new(lib_path)).expect("failed to load library");
+
+        // let cell_func = MandelbrotCellFunc::default_for_size(width, height);
+        // let cell_func = default_cell_func_for_size(width, height);
+        let cell_func = fractal_lib.default_cell_func_for_size()(width, height);
+        start_worker(cell_func.clone(), tx);
 
         Self {
             width,
@@ -81,12 +92,12 @@ impl FractalWorker {
     fn stop_worker(&mut self) {
         self.pixel_receiver = None;
     }
-    fn start_new_worker(&mut self, cell_func: MandelbrotCellFunc) {
+    fn start_new_worker(&mut self, cell_func: RFractalCellFuncBox) {
         self.stop_worker();
         let (tx, rx) = channel();
         self.pixel_receiver = Some(rx);
         self.cell_func = cell_func;
-        start_worker(self.cell_func, tx);
+        start_worker(self.cell_func.clone(), tx);
     }
 
     pub fn apply_resize(&mut self, size: (u32, u32)) {
@@ -115,7 +126,7 @@ impl FractalWorker {
         self.width = new_width;
         self.height = new_height;
 
-        self.start_new_worker(self.cell_func.with_size(size));
+        self.start_new_worker(self.cell_func.with_size(size.into()));
     }
 
     pub fn apply_zoom(&mut self, mouse_wheel: f32) {
@@ -141,7 +152,7 @@ impl FractalWorker {
             })
             .collect_vec();
 
-        self.start_new_worker(self.cell_func.add_zoom(zoom_factor));
+        self.start_new_worker((&self.cell_func).add_zoom(zoom_factor));
     }
 
     pub fn apply_offset(&mut self, offset: (i32, i32)) {
@@ -170,7 +181,7 @@ impl FractalWorker {
             })
             .collect_vec();
 
-        self.start_new_worker(self.cell_func.with_offset(offset));
+        self.start_new_worker(self.cell_func.with_offset(offset.into()));
     }
 
     pub fn draw_full_buffer_with_offset(

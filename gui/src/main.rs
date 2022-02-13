@@ -21,6 +21,9 @@ struct Args {
     width: u32,
     #[structopt(short, long, default_value = "1024")]
     height: u32,
+    
+    #[structopt(short, long)]
+    lib_path: String,
 }
 
 #[paw::main]
@@ -57,7 +60,7 @@ fn main(args: Args) -> Result<()> {
     };
 
     let mut mouse_drag = MouseDragState::new();
-    let mut worker = FractalWorker::new(width, height);
+    let mut worker = FractalWorker::new(width, height, &args.lib_path);
 
     event_loop.run(move |event, _, control_flow| {
         // Update egui inputs

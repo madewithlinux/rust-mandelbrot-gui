@@ -5,8 +5,13 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+crate-type = ["cdylib",'rlib']
+
 [dependencies]
 shared = { path = "../../shared" }
+abi_stable = "0.10.4"
+
 
 # ndarray = { version = "0.15.4", features = ["rayon"] }
 # ultraviolet = { version = "0.8", features = [ "f64", "int" ] }

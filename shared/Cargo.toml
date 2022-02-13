@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 itertools = "0.10"
-# arrow = "8.0.0"
+abi_stable = "0.10.4"
+# cglue = {version = "0.2.5", features = ["layout_checks"] }
+

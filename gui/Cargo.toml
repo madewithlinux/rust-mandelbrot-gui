@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 shared = { path = "../shared" }
-mandelbrot_f64 = { path = "../impls/mandelbrot_f64" }
+# mandelbrot_f64 = { path = "../impls/mandelbrot_f64" }
 worker = { path = "../worker" }
 
 itertools = "0.10"
