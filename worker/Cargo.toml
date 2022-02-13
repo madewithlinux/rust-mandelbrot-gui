@@ -1,0 +1,30 @@
+[package]
+name = "worker"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+shared = { path = "../shared" }
+mandelbrot_f64 = { path = "../impls/mandelbrot_f64" }
+
+itertools = "0.10"
+rayon = "1"
+# crossbeam = "0.8"
+
+# png = "0.17"
+# palette = "0.6.0"
+# rgb = "0.8"
+image = "0.24"
+# imageproc = "0.22"
+
+# ndarray = { version = "0.15.4", features = ["rayon"] }
+ultraviolet = { version = "0.8", features = [ "f64", "int" ] }
+
+log = "0.4"
+env_logger = "0.9"
+anyhow = "1"
+
+
+core_extensions = { version = "1.5", features = ["integers", "self_ops"]}

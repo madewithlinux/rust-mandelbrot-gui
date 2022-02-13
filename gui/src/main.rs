@@ -1,6 +1,5 @@
 mod gui;
 mod mouse_drag;
-mod worker_thread;
 
 use crate::gui::Framework;
 use anyhow::Result;
@@ -14,7 +13,7 @@ use winit::{
     window::WindowBuilder,
 };
 use winit_input_helper::WinitInputHelper;
-use worker_thread::FractalWorker;
+use worker::FractalWorker;
 
 #[derive(Debug, structopt::StructOpt)]
 struct Args {
