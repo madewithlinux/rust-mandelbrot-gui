@@ -81,6 +81,10 @@ impl FractalWorker {
         }
     }
 
+    pub fn get_size(&self) -> (u32, u32) {
+        (self.width, self.height)
+    }
+
     pub fn reload_library(&mut self, lib_path: &str) {
         println!("TODO: reload the library")
     }

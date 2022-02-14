@@ -52,8 +52,8 @@ impl Framework {
     }
 
     /// Update scaling factor.
-    pub(crate) fn scale_factor(&mut self, scale_factor: f64) {
-        self.screen_descriptor.scale_factor = scale_factor as f32;
+    pub(crate) fn scale_factor(&mut self, scale_factor: f32) {
+        self.screen_descriptor.scale_factor = scale_factor;
     }
 
     /// Prepare egui.

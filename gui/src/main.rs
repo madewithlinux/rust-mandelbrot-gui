@@ -1,3 +1,4 @@
+mod gui;
 mod gui_framework;
 mod mouse_drag;
 
@@ -24,6 +25,9 @@ struct Args {
 
     #[structopt(short, long)]
     lib_path: String,
+
+    #[structopt(long, default_value = "1.25")]
+    extra_scale_factor: f32,
 }
 
 #[paw::main]
@@ -31,6 +35,7 @@ fn main(args: Args) -> Result<()> {
     let mut width = args.width;
     let mut height = args.height;
     let lib_path = args.lib_path;
+    let extra_scale_factor = args.extra_scale_factor;
 
     env_logger::init();
     let event_loop = EventLoop::new();
@@ -54,8 +59,12 @@ fn main(args: Args) -> Result<()> {
         dbg!(scale_factor);
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
         let pixels = Pixels::new(width, height, surface_texture)?;
-        let framework =
-            Framework::new(window_size.width, window_size.height, scale_factor, &pixels);
+        let framework = Framework::new(
+            window_size.width,
+            window_size.height,
+            scale_factor * extra_scale_factor,
+            &pixels,
+        );
 
         (pixels, framework)
     };
@@ -86,8 +95,8 @@ fn main(args: Args) -> Result<()> {
 
             // Update the scale factor
             if let Some(scale_factor) = input.scale_factor() {
-                dbg!(scale_factor);
-                framework.scale_factor(scale_factor);
+                // dbg!(scale_factor);
+                framework.scale_factor((scale_factor as f32) * extra_scale_factor);
             }
 
             // Resize the window
@@ -154,13 +163,16 @@ fn main(args: Args) -> Result<()> {
 
                 // Prepare egui (including render UI)
                 framework.prepare(&window, |ctx| {
-                    egui::Window::new("mandelbrot gui").show(&ctx, |ui| {
-                        ui.label("Hello world!");
-                        if ui.button("Click me").clicked() {
-                            println!("clicked")
-                        }
-                    });
+                    gui::gui(ctx, &mut worker, &mut mouse_drag, &lib_path);
                 });
+                // framework.prepare(&window, |ctx| {
+                //     egui::Window::new("mandelbrot gui").show(&ctx, |ui| {
+                //         ui.label("Hello world!");
+                //         if ui.button("Click me").clicked() {
+                //             println!("clicked")
+                //         }
+                //     });
+                // });
 
                 // Render everything together
                 let render_result = pixels.render_with(|encoder, render_target, context| {
