@@ -1,0 +1,29 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'rust-mandelbrot-gui'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=rust-mandelbrot-gui",
+                    "--package=rust-mandelbrot-gui"
+                ],
+                "filter": {
+                    "name": "rust-mandelbrot-gui",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "--lib-path",
+                "${workspaceFolder}/target/release/libmandelbrot_f64.so",
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

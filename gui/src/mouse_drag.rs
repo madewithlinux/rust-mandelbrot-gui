@@ -22,6 +22,13 @@ impl MouseDragState {
         Self::Init
     }
 
+    pub fn drag_offset_or_zero(&self) -> (i32, i32) {
+        match self {
+            MouseDragState::Dragging { offset, .. } => *offset,
+            _ => (0, 0),
+        }
+    }
+
     pub fn update(self, input: &WinitInputHelper, pixels: &Pixels) -> Self {
         let mouse_pos = input.mouse().map(|pos| {
             // allow mouse drag to extend outside window

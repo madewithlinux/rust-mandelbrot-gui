@@ -33,9 +33,13 @@ https://docs.rs/polars/latest/polars/
   - [x] resize canvas
 - [x] switch to minifb to see if that's faster
   * it's great but it doesn't look like there's any easy way to add a gui...
-- [ ] improve data structure used
+- [x] improve data structure used
   - [x] maybe polars? no, it's too slow
-- [ ] use https://docs.rs/cglue/latest/cglue/ and https://docs.rs/libloading/latest/libloading/ for loading dynamic lib
+  - [x] come on, at least use a 2d grid lol
+- [x] make a stable abi
+- [x] load fractal impl dynamically
+- [ ] be able to reload the dynamic library
+  - [ ] use https://docs.rs/libloading/latest/libloading/ for loading dynamic lib?
 - [ ] use apache arrow for IPC?
 - [ ] use some data frame lib?
   * https://github.com/apache/arrow-rs

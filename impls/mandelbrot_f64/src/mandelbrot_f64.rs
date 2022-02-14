@@ -34,7 +34,8 @@ impl FractalCellFunc for MandelbrotCellFunc {
         Self {
             width,
             height,
-            max_iter: 1024,
+            // max_iter: 1024,
+            max_iter: 8192,
             center: Complex64::new(0.0, 0.0),
             top_left: Complex64::new(-1.0, 1.0),
             pixel_size: Complex64::new(2.0 / (width as f64), -2.0 / (height as f64)),

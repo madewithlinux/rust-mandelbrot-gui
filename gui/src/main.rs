@@ -140,26 +140,11 @@ fn main(args: Args) -> Result<()> {
             // Draw the current frame
             Event::RedrawRequested(_) => {
                 worker.receive_into_buf();
-                match mouse_drag {
-                    MouseDragState::Dragging { offset, .. } => {
-                        worker.draw_full_buffer_with_offset(
-                            offset.0,
-                            offset.1,
-                            pixels.get_frame(),
-                            width,
-                            height,
-                        );
-                    }
-                    _ => {
-                        worker.draw_full_buffer_with_offset(
-                            0,
-                            0,
-                            pixels.get_frame(),
-                            width,
-                            height,
-                        );
-                    }
-                };
+                worker.draw_with_offset(
+                    mouse_drag.drag_offset_or_zero(),
+                    pixels.get_frame(),
+                    (width, height),
+                );
 
                 // Prepare egui (including render UI)
                 framework.prepare(&window, |ctx| {
