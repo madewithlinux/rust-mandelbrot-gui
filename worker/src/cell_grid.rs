@@ -1,6 +1,8 @@
 use std::{
+    cmp::max,
     mem::{swap, take},
     ops::{Deref, Index, IndexMut},
+    slice::ChunksExactMut,
 };
 
 use abi_stable::rtuple;
@@ -154,16 +156,60 @@ impl CellGridBuffer {
     }
 
     pub fn apply_offset(&mut self, offset: (i32, i32)) {
-        let offset = IVec2::from(offset);
+        // let offset = IVec2::from(offset);
+        // self.back.reset();
+        // for pos in self.front.iter_points_i32() {
+        //     let newpos = pos - offset;
+        //     if self.back.contains_ivec2(newpos) {
+        //         self.back[newpos] = take(&mut self.front[pos]);
+        //     }
+        // }
+        // swap(&mut self.front, &mut self.back);
+        // self.back.reset();
 
-        self.back.reset();
-        for pos in self.front.iter_points_i32() {
-            let newpos = pos - offset;
-            if self.back.contains_ivec2(newpos) {
-                self.back[newpos] = take(&mut self.front[pos]);
-            }
-        }
+        apply_offset(offset, &mut self.front, &mut self.back);
         swap(&mut self.front, &mut self.back);
+        self.back.reset();
+    }
+}
+
+// TODO: resize equivalent of this
+fn apply_offset<T: Default>(
+    (dx, dy): (i32, i32),
+    src: &mut RowMajorGrid<T>,
+    dest: &mut RowMajorGrid<T>,
+) {
+    assert_eq!(src.width(), dest.width());
+    assert_eq!(src.height(), dest.height());
+    assert_eq!(src.data.len(), dest.data.len());
+    dest.reset();
+
+    let src_min_x = max(dx, 0) as usize;
+    let dest_min_x = max(-dx, 0) as usize;
+    let src_min_y = max(dy, 0) as usize;
+    let dest_min_y = max(-dy, 0) as usize;
+    let inner_width = src.width() as usize - dx.abs() as usize;
+    let inner_height = src.height() as usize - dy.abs() as usize;
+
+    let src_row_iter = src
+        .row_chunks_exact_mut()
+        .skip(src_min_y)
+        .take(inner_height);
+    let dest_row_iter = dest
+        .row_chunks_exact_mut()
+        .skip(dest_min_y)
+        .take(inner_height);
+    for (src_row, dest_row) in src_row_iter.zip(dest_row_iter) {
+        // src_row[..src_min_x].fill_with(Default::default);
+        dest_row[..dest_min_x].fill_with(Default::default);
+        for (s, d) in src_row[src_min_x..src_min_x + inner_width]
+            .iter_mut()
+            .zip(dest_row[dest_min_x..dest_min_x + inner_width].iter_mut())
+        {
+            *d = take(s);
+        }
+        // src_row[src_min_x + inner_width..].fill_with(Default::default);
+        dest_row[dest_min_x + inner_width..].fill_with(Default::default);
     }
 }
 
@@ -216,6 +262,10 @@ impl<T> RowMajorGrid<T> {
         (0..height)
             .cartesian_product(0..width)
             .map(|(y, x)| IVec2 { x, y })
+    }
+
+    pub fn row_chunks_exact_mut(&mut self) -> ChunksExactMut<'_, T> {
+        self.data.chunks_exact_mut(self._width as usize)
     }
 
     #[inline]
