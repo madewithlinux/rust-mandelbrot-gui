@@ -120,8 +120,14 @@ impl FractalCellFunc for MandelbrotCellFunc {
         }
     }
 
-    fn with_option(&self, _name: &str, _value: &str) -> Self {
-        todo!()
+    fn with_option(&self, name: &str, _value: &str) -> Result<Self, String> {
+        match name {
+            "max_iter" => Ok(Self {
+                max_iter: _value.parse().map_err(|_| "failed to parse value")?,
+                ..*self
+            }),
+            _ => Err("unimplemented".to_owned()),
+        }
     }
 
     fn get_options(&self) -> std::collections::HashMap<String, String> {
@@ -135,4 +141,3 @@ impl FractalCellFunc for MandelbrotCellFunc {
         ])
     }
 }
-

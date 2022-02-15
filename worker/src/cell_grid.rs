@@ -6,13 +6,11 @@ use std::{
 };
 
 use abi_stable::rtuple;
+use abi_stable::std_types::{RVec, Tuple2, Tuple3};
 use core_extensions::collections::IntoArray;
-use image::{
-    imageops::{self, FilterType},
-    ImageBuffer, Pixel, Rgb, Rgba,
-};
+use image::{ImageBuffer, Pixel, Rgb, Rgba};
 use itertools::Itertools;
-use shared::{RCell, RVec, Tuple2, Tuple3};
+use shared::RCell;
 use ultraviolet::{DVec2, IVec2, UVec2};
 
 type Image<P> = ImageBuffer<P, Vec<<P as Pixel>::Subpixel>>;
@@ -111,6 +109,17 @@ impl CellGridBuffer {
     }
     pub fn height(&self) -> u32 {
         self.front.height()
+    }
+
+    pub fn mark_all_positions_stale(&mut self) {
+        set_stale(&mut self.front);
+    }
+    pub fn get_stale_positions(&self) -> Vec<Tuple2<u32, u32>> {
+        self.front
+            .iter_points_i32()
+            .filter(|p| self.front[p].state != CellState::FreshRgb)
+            .map(|IVec2 { x, y }| Tuple2(x as u32, y as u32))
+            .collect_vec()
     }
 
     pub fn put_rcell(&mut self, rcell: RCell) -> bool {

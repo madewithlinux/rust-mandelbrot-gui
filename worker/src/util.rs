@@ -5,7 +5,8 @@ pub fn measure_execution_time<R, F: FnOnce() -> R>(label: &str, func: F) -> R {
     println!(
         "measure_execution_time, {}, {}",
         label,
-        (dur.as_micros() as f64) / 1000.0
+        // (dur.as_micros() as f64) / 1000.0
+        dur.as_secs_f64() * 1000.0
     );
     out
 }

@@ -7,7 +7,7 @@ use abi_stable::package_version_strings;
 use abi_stable::sabi_types::VersionStrings;
 use abi_stable::std_types::RArc;
 use abi_stable::std_types::RStr;
-pub use abi_stable::std_types::{RHashMap, RString, RVec, Tuple2, Tuple3};
+use abi_stable::std_types::{RHashMap, RString, RVec, Tuple2, Tuple3, RResult};
 use abi_stable::{
     sabi_trait,
     std_types::{RBox, RSlice},
@@ -50,7 +50,6 @@ pub type ROptionsMap = RHashMap<RString, RString>;
 
 #[sabi_trait]
 pub trait RFractalCellFunc: Clone + Debug + Sync + Send + 'static {
-
     fn clone_self(&self) -> RFractalCellFuncBox;
 
     fn get_size(&self) -> Tuple2<u32, u32>;
@@ -62,7 +61,8 @@ pub trait RFractalCellFunc: Clone + Debug + Sync + Send + 'static {
     fn with_offset(&self, offset: Tuple2<i32, i32>) -> RFractalCellFuncBox;
     fn add_zoom(&self, zoom_factor: f64) -> RFractalCellFuncBox;
 
-    fn with_option(&self, name: RStr, value: RStr) -> RFractalCellFuncBox;
+    fn with_option(&self, name: RStr, value: RStr) -> RResult<RFractalCellFuncBox, RString>;
+
     #[sabi(last_prefix_field)]
     fn get_options(&self) -> ROptionsMap;
 }

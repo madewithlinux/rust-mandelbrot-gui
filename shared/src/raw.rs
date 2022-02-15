@@ -2,9 +2,10 @@ use std::{collections::HashMap, fmt::Debug};
 
 use abi_stable::erased_types::TD_Opaque;
 use abi_stable::rvec;
+use abi_stable::std_types::RResult;
 use abi_stable::std_types::RSlice;
 use abi_stable::std_types::RStr;
-pub use abi_stable::std_types::{RHashMap, RString, RVec, Tuple2, Tuple3};
+use abi_stable::std_types::{RHashMap, RString, RVec, Tuple2};
 use itertools::Itertools;
 
 use crate::{RCell, RFractalCellFunc, RFractalCellFuncBox};
@@ -47,7 +48,7 @@ pub trait FractalCellFunc: Clone + Debug + 'static + Sync + Send {
     fn with_offset(&self, offset: (i32, i32)) -> Self;
     fn add_zoom(&self, zoom_factor: f64) -> Self;
 
-    fn with_option(&self, name: &str, value: &str) -> Self;
+    fn with_option(&self, name: &str, value: &str) -> Result<Self, String>;
     fn get_options(&self) -> HashMap<String, String>;
 
     fn into_box(self) -> RFractalCellFuncBox {
@@ -87,8 +88,11 @@ impl<T: FractalCellFunc> RFractalCellFunc for T {
         FractalCellFunc::add_zoom(self, zoom_factor.into()).into_box()
     }
 
-    fn with_option(&self, name: RStr, value: RStr) -> RFractalCellFuncBox {
-        FractalCellFunc::with_option(self, name.into(), value.into()).into_box()
+    fn with_option(&self, name: RStr, value: RStr) -> RResult<RFractalCellFuncBox, RString> {
+        FractalCellFunc::with_option(self, name.into(), value.into())
+            .map(|func| func.into_box())
+            .map_err(|err_str| err_str.into())
+            .into()
     }
 
     fn get_options(&self) -> RHashMap<RString, RString> {
