@@ -15,7 +15,6 @@ use abi_stable::{
 };
 
 pub mod raw;
-pub mod util;
 
 #[repr(C)]
 #[derive(StableAbi)]
@@ -47,8 +46,11 @@ pub struct RCell {
     pub data: RVec<u8>,
 }
 
+pub type ROptionsMap = RHashMap<RString, RString>;
+
 #[sabi_trait]
 pub trait RFractalCellFunc: Clone + Debug + Sync + Send + 'static {
+
     fn clone_self(&self) -> RFractalCellFuncBox;
 
     fn get_size(&self) -> Tuple2<u32, u32>;
@@ -62,7 +64,7 @@ pub trait RFractalCellFunc: Clone + Debug + Sync + Send + 'static {
 
     fn with_option(&self, name: RStr, value: RStr) -> RFractalCellFuncBox;
     #[sabi(last_prefix_field)]
-    fn get_options(&self) -> RHashMap<RString, RString>;
+    fn get_options(&self) -> ROptionsMap;
 }
 
 pub type RFractalCellFuncBox = RFractalCellFunc_TO<RBox<()>>;

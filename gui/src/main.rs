@@ -4,10 +4,10 @@ mod mouse_drag;
 
 use crate::gui_framework::Framework;
 use anyhow::Result;
+use gui::GuiState;
 use log::error;
 use mouse_drag::MouseDragState;
 use pixels::{Pixels, SurfaceTexture};
-use shared::util::measure_execution_time;
 use winit::{
     dpi::LogicalSize,
     event::{Event, MouseScrollDelta, TouchPhase, VirtualKeyCode, WindowEvent},
@@ -15,6 +15,7 @@ use winit::{
     window::WindowBuilder,
 };
 use winit_input_helper::WinitInputHelper;
+use worker::util::measure_execution_time;
 use worker::FractalWorker;
 
 #[derive(Debug, structopt::StructOpt)]
@@ -72,6 +73,7 @@ fn main(args: Args) -> Result<()> {
 
     let mut mouse_drag = MouseDragState::new();
     let mut worker = FractalWorker::new(width, height, &lib_path);
+    let mut gui_state = GuiState::default();
 
     event_loop.run(move |event, _, control_flow| {
         // Update egui inputs
@@ -129,6 +131,10 @@ fn main(args: Args) -> Result<()> {
         }
 
         match event {
+            Event::MainEventsCleared => {
+                worker.on_main_events_cleared();
+            }
+
             Event::WindowEvent {
                 event:
                     WindowEvent::MouseWheel {
@@ -138,31 +144,27 @@ fn main(args: Args) -> Result<()> {
                     },
                 ..
             } if x.abs() < 0.1 => {
-                println!("scroll delta: {}", y);
-                worker.apply_zoom(y);
+                // println!("scroll delta: {}", y);
+                measure_execution_time("worker.apply_zoom", || {
+                    worker.apply_zoom(y);
+                });
             }
 
             // Draw the current frame
             Event::RedrawRequested(_) => {
                 worker.receive_into_buf();
+                // measure_execution_time("worker.draw_with_offset", || {
                 worker.draw_with_offset(
                     mouse_drag.drag_offset_or_zero(),
                     pixels.get_frame(),
                     (width, height),
                 );
+                // });
 
                 // Prepare egui (including render UI)
                 framework.prepare(&window, |ctx| {
-                    gui::gui(ctx, &mut worker, &mut mouse_drag, &lib_path);
+                    gui_state.draw_gui(ctx, &mut worker, &mut mouse_drag, &lib_path);
                 });
-                // framework.prepare(&window, |ctx| {
-                //     egui::Window::new("mandelbrot gui").show(&ctx, |ui| {
-                //         ui.label("Hello world!");
-                //         if ui.button("Click me").clicked() {
-                //             println!("clicked")
-                //         }
-                //     });
-                // });
 
                 // Render everything together
                 let render_result = pixels.render_with(|encoder, render_target, context| {

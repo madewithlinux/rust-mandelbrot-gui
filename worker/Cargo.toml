@@ -31,4 +31,4 @@ env_logger = "0.9"
 anyhow = "1"
 
 
-core_extensions = { version = "1.5", features = ["integers", "self_ops"]}
+core_extensions = { version = "1.5", features = ["integers", "self_ops", "type_identity", "collections"]}
