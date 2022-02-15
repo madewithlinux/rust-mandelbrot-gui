@@ -14,6 +14,7 @@ use abi_stable::std_types::{
 use abi_stable::{library::RootModule, std_types::RSlice};
 use cell_grid::CellGridBuffer;
 use core_extensions::SelfOps;
+use rand::{prelude::SliceRandom, thread_rng};
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 
 use shared::{FractalLib_Ref, RCell, RFractalCellFuncBox, ROptionsMap};
@@ -218,17 +219,17 @@ impl FractalWorker {
 fn start_worker(
     cell_func: RFractalCellFuncBox,
     epoch: u32,
-    pixel_positions: Vec<Tuple2<u32, u32>>,
+    mut pixel_positions: Vec<Tuple2<u32, u32>>,
     sender: Sender<WorkerMessage>,
 ) {
     rayon::spawn(move || {
-        // let (width, height) = cell_func.get_size().into();
-        // let pixel_positions = iproduct!(0..width, 0..height)
-        //     .map(Tuple2::from)
-        //     .collect_vec();
         sender
             .send(WorkerMessage::Init)
             .expect("interrupted before beginning render");
+
+        let mut rng = thread_rng();
+        pixel_positions.as_mut_slice().shuffle(&mut rng);
+
         let res = pixel_positions
             .par_chunks(CHUNK_SIZE)
             .map_with(cell_func, |cell_func, positions| {
