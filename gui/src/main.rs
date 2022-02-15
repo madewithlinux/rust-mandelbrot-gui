@@ -7,6 +7,7 @@ use anyhow::Result;
 use log::error;
 use mouse_drag::MouseDragState;
 use pixels::{Pixels, SurfaceTexture};
+use shared::util::measure_execution_time;
 use winit::{
     dpi::LogicalSize,
     event::{Event, MouseScrollDelta, TouchPhase, VirtualKeyCode, WindowEvent},
@@ -107,14 +108,18 @@ fn main(args: Args) -> Result<()> {
                 framework.resize(size.width, size.height);
                 width = size.width;
                 height = size.height;
-                worker.apply_resize((width, height));
+                measure_execution_time("worker.apply_resize", || {
+                    worker.apply_resize((width, height));
+                });
             }
 
             if !framework.wants_pointer_input() {
                 mouse_drag = mouse_drag.update(&input, &pixels);
                 match mouse_drag {
                     MouseDragState::Released { offset } => {
-                        worker.apply_offset(offset);
+                        measure_execution_time("worker.apply_offset", || {
+                            worker.apply_offset(offset);
+                        });
                     }
                     _ => {}
                 };

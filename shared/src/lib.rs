@@ -15,6 +15,7 @@ use abi_stable::{
 };
 
 pub mod raw;
+pub mod util;
 
 #[repr(C)]
 #[derive(StableAbi)]

@@ -8,10 +8,8 @@ use std::{
 use abi_stable::{library::RootModule, std_types::RSlice};
 use cell_grid::CellGridBuffer;
 use core_extensions::SelfOps;
-use image::{ImageBuffer, Rgba};
 use itertools::{iproduct, Itertools};
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
-use ultraviolet::{DVec2, IVec2};
 
 use shared::{FractalLib_Ref, RCell, RFractalCellFuncBox, Tuple2};
 
@@ -75,7 +73,7 @@ impl FractalWorker {
         (self.width, self.height)
     }
 
-    pub fn reload_library(&mut self, lib_path: &str) {
+    pub fn reload_library(&mut self, _lib_path: &str) {
         println!("TODO: reload the library")
     }
 
@@ -88,7 +86,7 @@ impl FractalWorker {
                 if epoch != self.epoch {
                     continue;
                 }
-                self.grid_buf.put_rcell(&rcell);
+                self.grid_buf.put_rcell(rcell);
             }
         }
     }
