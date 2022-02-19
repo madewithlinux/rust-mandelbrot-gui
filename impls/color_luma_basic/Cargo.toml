@@ -1,15 +1,18 @@
 [package]
-name = "mandelbrot_f64"
+name = "color_luma_basic"
 version = "0.1.0"
 edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
+path = "color_luma_basic.rs"
 crate-type = ["cdylib",'rlib']
 [features]
 cdylib = []
 
+
 [dependencies]
-shared = { path = "../../shared" }
+color_func = { path = "../../interface/color_func" }
+mandelbrot_f64 = { path = "../mandelbrot_f64" }
 abi_stable = { version = "0.10.4", features = ["rust_latest_stable"] }
 
 
@@ -26,4 +29,3 @@ itertools = "0.10"
 
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-

@@ -310,6 +310,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "color_func"
+version = "0.1.0"
+dependencies = [
+ "abi_stable",
+ "fractal_func",
+ "itertools",
+]
+
+[[package]]
+name = "color_luma_basic"
+version = "0.1.0"
+dependencies = [
+ "abi_stable",
+ "anyhow",
+ "color_func",
+ "env_logger",
+ "itertools",
+ "log",
+ "mandelbrot_f64",
+ "num",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -760,6 +785,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
+name = "fractal_func"
+version = "0.1.0"
+dependencies = [
+ "abi_stable",
+ "itertools",
+]
+
+[[package]]
 name = "futures-core"
 version = "0.3.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1091,6 +1124,8 @@ dependencies = [
  "itertools",
  "log",
  "num",
+ "serde",
+ "serde_json",
  "shared",
 ]
 

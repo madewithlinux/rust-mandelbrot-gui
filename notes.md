@@ -38,12 +38,12 @@ https://docs.rs/polars/latest/polars/
   - [x] come on, at least use a 2d grid lol
 - [x] make a stable abi
 - [x] load fractal impl dynamically
+- [ ] separate fractal and colorizer functions
+- [ ] save/load config from json file
+- [ ] use gpu shader for canvas offset+zoom
 - [ ] be able to reload the dynamic library
   - [ ] use https://docs.rs/libloading/latest/libloading/ for loading dynamic lib?
-- [ ] use apache arrow for IPC?
-- [ ] use some data frame lib?
-  * https://github.com/apache/arrow-rs
-  * https://docs.rs/polars/latest/polars/
+
 
 
 

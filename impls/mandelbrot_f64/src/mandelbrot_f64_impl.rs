@@ -2,8 +2,15 @@ use std::collections::HashMap;
 
 use num::complex::Complex64;
 use num::Zero;
+use serde::{Deserialize, Serialize};
 
 use shared::raw::{Cell, FractalCellFunc};
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct MandelbrotData {
+    pub outside: bool,
+    pub iter: usize,
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct MandelbrotCellFunc {
@@ -77,6 +84,7 @@ impl FractalCellFunc for MandelbrotCellFunc {
             pos,
             iter: iter as f32,
             rgb: (color, color, color),
+            data: serde_json::to_vec(&MandelbrotData { outside, iter }).expect("to json"),
         }
     }
 

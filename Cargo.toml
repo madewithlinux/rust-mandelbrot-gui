@@ -5,6 +5,8 @@ members = [
     # "gui-imgui",
     "worker",
     "shared",
+    "interface/fractal_func",
+    "interface/color_func",
     "impls/*",
 ]
 resolver = "2"

@@ -9,7 +9,7 @@ edition = "2021"
 shared = { path = "../shared" }
 # mandelbrot_f64 = { path = "../impls/mandelbrot_f64" }
 
-abi_stable = "0.10.4"
+abi_stable = { version = "0.10.4", features = ["rust_latest_stable"] }
 
 
 itertools = "0.10"

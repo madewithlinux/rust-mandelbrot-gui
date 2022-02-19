@@ -12,13 +12,13 @@ use crate::{RCell, RFractalCellFunc, RFractalCellFuncBox};
 
 // TODO: probalby ought to just factor this all out anyway
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Cell {
     pub pos: (u32, u32),
     pub iter: f32,
     pub rgb: (u8, u8, u8),
     // TODO: data?
-    // pub data: Vec<u8>,
+    pub data: Vec<u8>,
 }
 
 impl Into<RCell> for Cell {
