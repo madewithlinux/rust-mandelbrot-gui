@@ -29,7 +29,6 @@ impl RColorFunc for BasicLumaColorFunc {
 #[cfg(feature = "cdylib")]
 #[export_root_module]
 pub fn get_color_lib_ref() -> ColorLib_Ref {
-    // pub fn get_library() -> ColorLib_Ref {
     ColorLib { default_color_func }.leak_into_prefix()
 }
 

@@ -9,24 +9,20 @@ use std::{
 
 use abi_stable::std_types::{
     RResult::{RErr, ROk},
-    RStr, RString, Tuple2,
+    RStr, RString,
 };
 use abi_stable::{library::RootModule, std_types::RSlice};
 use cell_grid::CellGridBuffer;
 use core_extensions::SelfOps;
+use itertools::Itertools;
 use rand::{prelude::SliceRandom, thread_rng};
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 
-use shared::{FractalLib_Ref, RCell, RFractalCellFuncBox, ROptionsMap};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Pixel {
-    x: u32,
-    y: u32,
-    r: u8,
-    g: u8,
-    b: u8,
-}
+use color_func::{
+    prelude::{ColorLib_Ref, RColorFuncBox},
+    RColor,
+};
+use fractal_func::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorkerState {
@@ -46,7 +42,7 @@ enum WorkerMessage {
     Init,
     Finished,
     // Interrupted, // not possible to send because interrupted only happens when the channel is closed
-    Chunk(RCell, u32),
+    Chunk(RCell, RColor, u32),
 }
 
 #[derive(Debug)]
@@ -57,25 +53,30 @@ pub struct FractalWorker {
     state: WorkerState,
     pixel_receiver: Option<Receiver<WorkerMessage>>,
     grid_buf: CellGridBuffer,
-    cell_func: RFractalCellFuncBox,
+    fractal_func: RFractalFuncBox,
+    color_func: RColorFuncBox,
 }
 
 const CHUNK_SIZE: usize = 128;
 
 impl FractalWorker {
-    pub fn new(width: u32, height: u32, lib_path: &str) -> Self {
+    pub fn new(width: u32, height: u32, fractal_lib_path: &str, color_lib_path: &str) -> Self {
         let fractal_lib: FractalLib_Ref =
-            FractalLib_Ref::load_from_file(Path::new(lib_path)).expect("failed to load library");
+            FractalLib_Ref::load_from_file(Path::new(fractal_lib_path))
+                .expect("failed to load fractal library");
+        let color_lib: ColorLib_Ref = ColorLib_Ref::load_from_file(Path::new(color_lib_path))
+            .expect("failed to load color library");
         Self {
             width,
             height,
             epoch: 0,
             state: WorkerState::Init,
             pixel_receiver: None,
-            cell_func: fractal_lib.default_cell_func_for_size()(width, height),
+            fractal_func: fractal_lib.default_fractal_func_for_size()(width, height),
+            color_func: color_lib.default_color_func()(),
             grid_buf: CellGridBuffer::new(width, height),
         }
-        .mutated(|s| s.start_new_worker(s.cell_func.clone()))
+        .mutated(|s| s.start_or_restart_worker())
     }
 
     pub fn get_size(&self) -> (u32, u32) {
@@ -83,13 +84,13 @@ impl FractalWorker {
     }
 
     pub fn get_fractal_options(&self) -> ROptionsMap {
-        self.cell_func.get_options()
+        self.fractal_func.get_options()
     }
     pub fn set_fractal_options(&mut self, options: &HashMap<RString, String>) {
-        let mut cell_func = self.cell_func.clone();
+        let mut cell_func = self.fractal_func.clone();
         for (name, value) in options.iter() {
             cell_func = match self
-                .cell_func
+                .fractal_func
                 .with_option(name.as_rstr(), value.as_str().into())
             {
                 ROk(cell_func) => cell_func,
@@ -103,7 +104,7 @@ impl FractalWorker {
         self.start_new_worker(cell_func);
     }
     pub fn set_fractal_option(&mut self, name: RStr, value: &str) {
-        match self.cell_func.with_option(name, value.into()) {
+        match self.fractal_func.with_option(name, value.into()) {
             ROk(cell_func) => {
                 self.grid_buf.mark_all_positions_stale();
                 self.start_new_worker(cell_func);
@@ -136,8 +137,8 @@ impl FractalWorker {
             for message in receiver.try_iter() {
                 match message {
                     WorkerMessage::Finished => self.state = WorkerState::Finished,
-                    WorkerMessage::Chunk(rcell, epoch) if epoch == self.epoch => {
-                        self.grid_buf.put_rcell(rcell);
+                    WorkerMessage::Chunk(rcell, rcolor, epoch) if epoch == self.epoch => {
+                        self.grid_buf.put_value(rcell, rcolor);
                         if let WorkerState::Working { total, completed } = self.state {
                             self.state = WorkerState::Working {
                                 total,
@@ -158,8 +159,8 @@ impl FractalWorker {
     }
 
     /// get ready to start a new worker once debounced events are handled
-    fn debounce_start_new_worker(&mut self, cell_func: RFractalCellFuncBox) {
-        self.cell_func = cell_func;
+    fn debounce_start_new_worker(&mut self, cell_func: RFractalFuncBox) {
+        self.fractal_func = cell_func;
         self.state = WorkerState::InputDebounce;
     }
 
@@ -169,30 +170,36 @@ impl FractalWorker {
         self.pixel_receiver = Some(rx);
         let positions = self.grid_buf.get_stale_positions();
         let positions_len = positions.len();
-        start_worker(self.cell_func.clone(), self.epoch, positions, tx);
+        start_worker(
+            self.fractal_func.clone(),
+            self.color_func.clone(),
+            self.epoch,
+            positions,
+            tx,
+        );
         self.state = WorkerState::Working {
             total: positions_len,
             completed: 0,
         };
     }
 
-    fn start_new_worker(&mut self, cell_func: RFractalCellFuncBox) {
+    fn start_new_worker(&mut self, cell_func: RFractalFuncBox) {
         self.stop_worker();
-        self.cell_func = cell_func;
+        self.fractal_func = cell_func;
         self.start_or_restart_worker();
     }
 
     pub fn apply_resize(&mut self, size: (u32, u32)) {
         self.stop_worker();
         self.grid_buf.apply_resize(size);
-        self.debounce_start_new_worker(self.cell_func.with_size(size.into()));
+        self.debounce_start_new_worker(self.fractal_func.with_size(size.0, size.1));
     }
 
     pub fn apply_zoom(&mut self, mouse_wheel: f32) {
         self.stop_worker();
         let zoom_factor = if mouse_wheel > 0.0 { 1.1 } else { 1.0 / 1.1 };
         self.grid_buf.apply_zoom(zoom_factor);
-        self.debounce_start_new_worker(self.cell_func.add_zoom(zoom_factor));
+        self.debounce_start_new_worker(self.fractal_func.add_zoom(zoom_factor));
     }
 
     pub fn apply_offset(&mut self, offset: (i32, i32)) {
@@ -202,7 +209,7 @@ impl FractalWorker {
             p.1 *= -1;
         });
         self.grid_buf.apply_offset(offset);
-        self.debounce_start_new_worker(self.cell_func.with_offset(offset.into()));
+        self.debounce_start_new_worker(self.fractal_func.with_offset(offset.0, offset.1));
     }
 
     pub fn draw_with_offset(&self, offset: (i32, i32), screen: &mut [u8], screen_size: (u32, u32)) {
@@ -217,9 +224,10 @@ impl FractalWorker {
 }
 
 fn start_worker(
-    cell_func: RFractalCellFuncBox,
+    fractal_func: RFractalFuncBox,
+    color_func: RColorFuncBox,
     epoch: u32,
-    mut pixel_positions: Vec<Tuple2<u32, u32>>,
+    mut pixel_positions: Vec<[u32; 2]>,
     sender: Sender<WorkerMessage>,
 ) {
     rayon::spawn(move || {
@@ -232,12 +240,17 @@ fn start_worker(
 
         let res = pixel_positions
             .par_chunks(CHUNK_SIZE)
-            .map_with(cell_func, |cell_func, positions| {
-                cell_func.compute_cells(RSlice::from(positions)).into_vec()
+            .map_with(fractal_func, |fractal_func, positions| {
+                let cells = fractal_func.compute_cells(RSlice::from(positions));
+                color_func
+                    .compute_colors(cells.as_rslice())
+                    .into_iter()
+                    .zip(cells)
+                    .collect_vec()
             })
             .flatten()
-            .try_for_each_with(sender.clone(), |sender, cell| {
-                sender.send(WorkerMessage::Chunk(cell, epoch))
+            .try_for_each_with(sender.clone(), |sender, (rcolor, rcell)| {
+                sender.send(WorkerMessage::Chunk(rcell, rcolor, epoch))
             })
             .map(|_| sender.send(WorkerMessage::Finished));
         match res {

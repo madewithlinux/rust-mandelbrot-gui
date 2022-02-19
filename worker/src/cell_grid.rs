@@ -10,10 +10,12 @@ use abi_stable::std_types::{RVec, Tuple2, Tuple3};
 use core_extensions::collections::IntoArray;
 use image::{ImageBuffer, Pixel, Rgb, Rgba};
 use itertools::Itertools;
-use shared::RCell;
+use color_func::RColor;
+use fractal_func::RCell;
+
 use ultraviolet::{DVec2, IVec2, UVec2};
 
-type Image<P> = ImageBuffer<P, Vec<<P as Pixel>::Subpixel>>;
+// type Image<P> = ImageBuffer<P, Vec<<P as Pixel>::Subpixel>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CellState {
@@ -33,6 +35,7 @@ impl Default for CellState {
 pub struct Cell {
     state: CellState,
     data: Option<RVec<u8>>,
+    // TODO: refactor this to [u8; 3]
     rgb: Tuple3<u8, u8, u8>,
 }
 
@@ -46,17 +49,15 @@ impl Default for Cell {
     }
 }
 
-impl From<RCell> for Cell {
-    fn from(rcell: RCell) -> Self {
-        Cell {
+impl Cell {
+    pub fn from_rcell_rcolor(rcell: RCell, rcolor: RColor) -> Self {
+        Self {
             state: CellState::FreshRgb,
             data: Some(rcell.data),
-            rgb: rcell.rgb,
+            rgb: rtuple!(rcolor.rgb[0], rcolor.rgb[1], rcolor.rgb[2]),
         }
     }
-}
 
-impl Cell {
     pub fn stale_from(other: &Self) -> Self {
         Cell {
             state: CellState::Stale,
@@ -114,18 +115,19 @@ impl CellGridBuffer {
     pub fn mark_all_positions_stale(&mut self) {
         set_stale(&mut self.front);
     }
-    pub fn get_stale_positions(&self) -> Vec<Tuple2<u32, u32>> {
+    pub fn get_stale_positions(&self) -> Vec<[u32; 2]> {
         self.front
             .iter_points_i32()
             .filter(|p| self.front[p].state != CellState::FreshRgb)
-            .map(|IVec2 { x, y }| Tuple2(x as u32, y as u32))
+            .map(|IVec2 { x, y }| [x as u32, y as u32])
             .collect_vec()
     }
 
-    pub fn put_rcell(&mut self, rcell: RCell) -> bool {
-        let pos = UVec2::from(rcell.pos.into_tuple());
+    pub fn put_value(&mut self, rcell: RCell, rcolor: RColor) -> bool {
+        assert_eq!(rcell.pos, rcolor.pos);
+        let pos: UVec2 = rcell.pos.into();
         if self.front.contains_uvec2(pos) {
-            self.front[pos] = rcell.into();
+            self.front[pos] = Cell::from_rcell_rcolor(rcell, rcolor);
             true
         } else {
             false

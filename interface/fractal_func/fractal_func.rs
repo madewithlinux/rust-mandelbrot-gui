@@ -20,7 +20,7 @@ use abi_stable::{
 #[sabi(missing_field(panic))]
 pub struct FractalLib {
     #[sabi(last_prefix_field)]
-    pub default_cell_func_for_size: extern "C" fn(width: u32, height: u32) -> RFractalCellFuncBox,
+    pub default_fractal_func_for_size: extern "C" fn(width: u32, height: u32) -> RFractalFuncBox,
 }
 
 /// The RootModule trait defines how to load the root module of a library.
@@ -45,18 +45,18 @@ pub struct RCell {
 pub type ROptionsMap = RHashMap<RString, RString>;
 
 #[sabi_trait]
-pub trait RFractalCellFunc: Clone + Debug + Sync + Send + 'static {
-    fn clone_self(&self) -> RFractalCellFuncBox;
+pub trait RFractalFunc: Clone + Debug + Sync + Send + 'static {
+    fn clone_self(&self) -> RFractalFuncBox;
 
     fn get_size(&self) -> Tuple2<u32, u32>;
 
     fn compute_cells(&self, positions: RSlice<[u32; 2]>) -> RVec<RCell>;
 
-    fn with_size(&self, size: &[u32; 2]) -> RFractalCellFuncBox;
-    fn with_offset(&self, offset: Tuple2<i32, i32>) -> RFractalCellFuncBox;
-    fn add_zoom(&self, zoom_factor: f64) -> RFractalCellFuncBox;
+    fn with_size(&self, width: u32, height: u32) -> RFractalFuncBox;
+    fn with_offset(&self, dx: i32, dy: i32) -> RFractalFuncBox;
+    fn add_zoom(&self, zoom_factor: f64) -> RFractalFuncBox;
 
-    fn with_option(&self, _name: RStr, _value: RStr) -> RResult<RFractalCellFuncBox, RString> {
+    fn with_option(&self, _name: RStr, _value: RStr) -> RResult<RFractalFuncBox, RString> {
         RResult::RErr(RString::from("unimplemented"))
     }
     #[sabi(last_prefix_field)]
@@ -65,18 +65,20 @@ pub trait RFractalCellFunc: Clone + Debug + Sync + Send + 'static {
     }
 }
 
-pub type RFractalCellFuncBox = RFractalCellFunc_TO<RBox<()>>;
-pub type RFractalCellFuncArc = RFractalCellFunc_TO<RArc<()>>;
+pub type RFractalFuncBox = RFractalFunc_TO<RBox<()>>;
+pub type RFractalFuncArc = RFractalFunc_TO<RArc<()>>;
 
 pub mod prelude {
     pub use super::RCell;
     pub use super::ROptionsMap;
     pub use super::{FractalLib, FractalLib_Ref};
-    pub use super::{RFractalCellFunc, RFractalCellFuncArc, RFractalCellFuncBox};
+    pub use super::{RFractalFunc, RFractalFuncArc, RFractalFuncBox};
 
+    pub use abi_stable::std_types::RResult::{RErr, ROk};
     pub use abi_stable::std_types::{
         RHashMap, RResult, RSlice, RStr, RString, RVec, Tuple2, Tuple3,
     };
+    pub use abi_stable::{rtry, rtuple, rstr};
 
     pub use abi_stable::erased_types::{TD_CanDowncast, TD_Opaque};
     pub use abi_stable::library::RootModule;

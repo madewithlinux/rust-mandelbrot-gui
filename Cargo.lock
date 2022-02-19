@@ -1130,6 +1130,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "mandelbrot_f64_new"
+version = "0.1.0"
+dependencies = [
+ "abi_stable",
+ "anyhow",
+ "color_func",
+ "env_logger",
+ "fractal_func",
+ "itertools",
+ "log",
+ "num",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "memchr"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1783,7 +1799,6 @@ dependencies = [
  "paw",
  "pixels",
  "rayon",
- "shared",
  "structopt",
  "ultraviolet",
  "winit",
@@ -2501,14 +2516,15 @@ dependencies = [
  "abi_stable",
  "anyhow",
  "array2d",
+ "color_func",
  "core_extensions",
  "env_logger",
+ "fractal_func",
  "image",
  "itertools",
  "log",
  "rand",
  "rayon",
- "shared",
  "ultraviolet",
 ]
 

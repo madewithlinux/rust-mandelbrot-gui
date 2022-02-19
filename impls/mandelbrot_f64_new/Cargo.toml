@@ -1,0 +1,32 @@
+[package]
+name = "mandelbrot_f64_new"
+version = "0.1.0"
+edition = "2021"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+path = "mandelbrot_f64.rs"
+crate-type = ["cdylib",'rlib']
+[features]
+default = ["cdylib"]
+cdylib = []
+
+
+[dependencies]
+color_func = { path = "../../interface/color_func" }
+fractal_func = { path = "../../interface/fractal_func" }
+abi_stable = { version = "0.10.4", features = ["rust_latest_stable"] }
+
+
+# ndarray = { version = "0.15.4", features = ["rayon"] }
+# ultraviolet = { version = "0.8", features = [ "f64", "int" ] }
+num = "0.4"
+# # rug = { version = "1", features = ["float", "complex"] }
+# simdeez = "1"
+
+log = "0.4"
+env_logger = "0.9"
+anyhow = "1"
+itertools = "0.10"
+
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }

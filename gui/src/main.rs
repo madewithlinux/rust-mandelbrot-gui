@@ -26,7 +26,9 @@ struct Args {
     height: u32,
 
     #[structopt(short, long)]
-    lib_path: String,
+    fractal_lib: String,
+    #[structopt(short, long)]
+    color_lib: String,
 
     #[structopt(long, default_value = "1.25")]
     extra_scale_factor: f32,
@@ -36,7 +38,8 @@ struct Args {
 fn main(args: Args) -> Result<()> {
     let mut width = args.width;
     let mut height = args.height;
-    let lib_path = args.lib_path;
+    let fractal_lib = args.fractal_lib;
+    let color_lib = args.color_lib;
     let extra_scale_factor = args.extra_scale_factor;
 
     env_logger::init();
@@ -72,7 +75,7 @@ fn main(args: Args) -> Result<()> {
     };
 
     let mut mouse_drag = MouseDragState::new();
-    let mut worker = FractalWorker::new(width, height, &lib_path);
+    let mut worker = FractalWorker::new(width, height, &fractal_lib, &color_lib);
     let mut gui_state = GuiState::default();
 
     event_loop.run(move |event, _, control_flow| {
@@ -163,7 +166,7 @@ fn main(args: Args) -> Result<()> {
 
                 // Prepare egui (including render UI)
                 framework.prepare(&window, |ctx| {
-                    gui_state.draw_gui(ctx, &mut worker, &mut mouse_drag, &lib_path);
+                    gui_state.draw_gui(ctx, &mut worker, &mut mouse_drag, &fractal_lib);
                 });
 
                 // Render everything together

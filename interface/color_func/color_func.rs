@@ -49,9 +49,7 @@ pub type ROptionsMap = RHashMap<RString, RString>;
 #[sabi_trait]
 pub trait RColorFunc: Clone + Debug + Sync + Send + 'static {
     fn compute_color(&self, cell: &RCell) -> RColor;
-    fn compute_colors(&self, cells: RSlice<RCell>) -> RVec<RColor> {
-        cells.iter().map(|cell| self.compute_color(cell)).collect()
-    }
+    fn compute_colors(&self, cells: RSlice<RCell>) -> RVec<RColor>;
 
     fn with_option(&self, _name: RStr, _value: RStr) -> RResult<RColorFuncBox, RString> {
         RResult::RErr(RString::from("unimplemented"))
