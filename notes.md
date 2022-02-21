@@ -38,9 +38,10 @@ https://docs.rs/polars/latest/polars/
   - [x] come on, at least use a 2d grid lol
 - [x] make a stable abi
 - [x] load fractal impl dynamically
-- [ ] separate fractal and colorizer functions
+- [x] separate fractal and colorizer functions
+  - [ ] remove the old mandelbrot func
+- [x] use gpu shader for canvas offset+zoom
 - [ ] save/load config from json file
-- [ ] use gpu shader for canvas offset+zoom
 - [ ] be able to reload the dynamic library
   - [ ] use https://docs.rs/libloading/latest/libloading/ for loading dynamic lib?
 

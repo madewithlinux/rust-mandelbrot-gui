@@ -7,7 +7,7 @@ use std::{
 
 use abi_stable::rtuple;
 use abi_stable::std_types::{RVec, Tuple2, Tuple3};
-use core_extensions::collections::IntoArray;
+// use core_extensions::collections::IntoArray;
 use image::{ImageBuffer, Pixel, Rgb, Rgba};
 use itertools::Itertools;
 use color_func::RColor;
@@ -21,7 +21,7 @@ use ultraviolet::{DVec2, IVec2, UVec2};
 enum CellState {
     Uninitialized,
     Stale,
-    FreshData,
+    _FreshData,
     FreshRgb,
 }
 
@@ -65,7 +65,7 @@ impl Cell {
             rgb: other.rgb,
         }
     }
-    pub fn stale_from_rgb(rgb: &Rgb<u8>) -> Self {
+    pub fn _stale_from_rgb(rgb: &Rgb<u8>) -> Self {
         let [r, g, b] = rgb.0;
         Cell {
             state: CellState::Stale,
@@ -83,12 +83,12 @@ impl Cell {
             }
         }
     }
-    pub fn get_rgb(&self) -> Rgb<u8> {
-        match self.state {
-            CellState::Uninitialized => Rgb([0, 0, 0]),
-            _ => Rgb(self.rgb.into_tuple().into_array()),
-        }
-    }
+    // pub fn get_rgb(&self) -> Rgb<u8> {
+    //     match self.state {
+    //         CellState::Uninitialized => Rgb([0, 0, 0]),
+    //         _ => Rgb(self.rgb.into_tuple().into_array()),
+    //     }
+    // }
 }
 
 #[derive(Debug)]
@@ -159,7 +159,7 @@ impl CellGridBuffer {
             let cell = &self.front[grid_pos];
             match cell.state {
                 CellState::Uninitialized => {}
-                CellState::Stale | CellState::FreshData => screen_buf
+                CellState::Stale | CellState::_FreshData => screen_buf
                     .get_pixel_mut(x, y)
                     .apply2(&cell.get_rgba(), |a, b| a / 2 + b / 2),
                 CellState::FreshRgb => screen_buf.put_pixel(x, y, cell.get_rgba()),

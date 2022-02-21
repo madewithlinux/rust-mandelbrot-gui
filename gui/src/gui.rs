@@ -9,7 +9,7 @@ use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use worker::FractalWorker;
 
-use crate::mouse_drag::MouseDragState;
+use crate::pan_zoom_debounce::PanZoomDebounce;
 
 const FRAME_TIMES_COUNT: usize = 60;
 
@@ -52,7 +52,7 @@ impl GuiState {
         &mut self,
         ctx: &CtxRef,
         worker: &mut FractalWorker,
-        _mouse_drag: &mut MouseDragState,
+        pan_zoom: &PanZoomDebounce,
         lib_path: &str,
     ) {
         self.update_frame_time();
@@ -76,6 +76,9 @@ impl GuiState {
                         .num_columns(2)
                         .striped(true)
                         .show(ui, |ui| {
+                            // ui.style_mut().wrap = Some(true);
+                            // ui.set_max_width(400.0);
+
                             ui.label("avg frame time:");
                             ui.label(format!("{:.1} ms", self.avg_frame_time() * 1000.0));
                             ui.end_row();
@@ -91,9 +94,18 @@ impl GuiState {
                             ui.label(lib_path);
                             ui.end_row();
 
-                            // ui.label("mouse drag state:");
-                            // ui.label(format!("{:?}", mouse_drag));
+                            // ui.label("pan zoom state");
+                            // ui.label(format!("{:?}", pan_zoom));
                             // ui.end_row();
+                            ui.label("x offset");
+                            ui.label(format!("{}", pan_zoom.transform.translation.x));
+                            ui.end_row();
+                            ui.label("y offset");
+                            ui.label(format!("{}", pan_zoom.transform.translation.y));
+                            ui.end_row();
+                            ui.label("zoom factor");
+                            ui.label(format!("{}", pan_zoom.transform.scale));
+                            ui.end_row();
 
                             ui.label("worker state:");
                             ui.label(format!("{:?}", worker.get_state()));
@@ -129,6 +141,9 @@ impl GuiState {
                     ui.end_row();
                 }
 
+                if ui.button("reset").clicked() {
+                    worker.reset_fractal_options();
+                }
                 if ui.button("clear").clicked() {
                     self.edited_fractal_options.clear();
                 }

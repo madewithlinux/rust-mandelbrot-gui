@@ -156,9 +156,12 @@ impl RFractalFunc for MandelbrotCellFunc {
                 // ("width", format!("{}", self.width)),
                 // ("height", format!("{}", self.height)),
                 ("max_iter", format!("{}", self.max_iter)),
-                ("center", format!("{}", self.center)),
-                ("top_left", format!("{}", self.top_left)),
-                ("pixel_size", format!("{}", self.pixel_size)),
+                // ("center", format!("{}", self.center)),
+                ("center_re", format!("{}", self.center.re)),
+                ("center_im", format!("{}", self.center.im)),
+                // ("top_left", format!("{}", self.top_left)),
+                // ("pixel_size", format!("{}", self.pixel_size)),
+                ("pixel_size", format!("{}", self.pixel_size.re)),
             ]
             .map(|(k, v)| (RString::from(k), RString::from(v))),
         )
