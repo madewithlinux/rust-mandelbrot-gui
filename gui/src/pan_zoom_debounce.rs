@@ -7,13 +7,14 @@ use winit_input_helper::WinitInputHelper;
 #[derive(Debug, Clone, Copy)]
 pub struct PanZoomDebounce {
     // state
-    pub width: u32,
-    pub height: u32,
-    pub is_dirty: bool,
-    pub is_mouse_down: bool,
-    pub prev_mouse_pos: Option<(f32, f32)>,
+    width: u32,
+    height: u32,
+    is_dirty: bool,
+    is_mouse_down: bool,
+    prev_mouse_pos: Option<(f32, f32)>,
     pub transform: Similarity3,
-    pub last_update: Instant,
+    last_update: Instant,
+    input_completed: bool,
     // config
     pub debounce_seconds: f64,
     pub min_move_size: f32,
@@ -29,6 +30,7 @@ impl PanZoomDebounce {
             prev_mouse_pos: None,
             transform: Similarity3::identity(),
             last_update: Instant::now(),
+            input_completed: false,
             debounce_seconds: 0.8,
             min_move_size: 4.0,
         }
@@ -120,14 +122,22 @@ impl PanZoomDebounce {
             * Mat4::from_translation(Vec3::new(-0.5, -0.5, 1.0))
     }
 
-    /// return value is (dx, dy, zoom_factor), if the input is done
-    pub fn get_completed_input(&mut self) -> Option<(i32, i32, f64)> {
-        if self.is_dirty
+    pub fn is_completed(&self) -> bool {
+        let c = self.is_dirty
             && !self.is_mouse_down
             && self.last_update.elapsed().as_secs_f64() > self.debounce_seconds
             && ((self.transform.scale - 1.0).abs() > 0.001
-                || self.transform.translation.xy().mag() > self.min_move_size)
-        {
+                || self.transform.translation.xy().mag() > self.min_move_size);
+        if c {
+            dbg!("is_completed");
+        };
+        c
+    }
+
+    /// return value is (dx, dy, zoom_factor), if the input is done
+    pub fn get_completed_input(&mut self) -> Option<(i32, i32, f64)> {
+        if self.is_completed() {
+            dbg!("get_completed_input");
             let IVec2 { x, y } = self.transform.translation.xy().try_into().unwrap();
             let zoom_factor = 1.0 / (self.transform.scale as f64);
             if (x, y, zoom_factor) == (0, 0, 1.0) {
@@ -135,9 +145,19 @@ impl PanZoomDebounce {
             }
             self.transform = Similarity3::identity();
             self.is_dirty = false;
+            self.input_completed = true;
             Some((x, y, zoom_factor))
         } else {
             None
+        }
+    }
+
+    pub fn did_input_just_finish(&mut self) -> bool {
+        if self.input_completed {
+            self.input_completed = false;
+            true
+        } else {
+            false
         }
     }
 }

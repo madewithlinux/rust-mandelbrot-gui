@@ -1,16 +1,19 @@
-use pixels::wgpu::{self, util::DeviceExt};
+use pixels::{
+    wgpu::{self, util::DeviceExt},
+    PixelsContext,
+};
 use ultraviolet::Mat4;
+use wgpu::{Extent3d, Texture, TextureDescriptor, TextureDimension, TextureUsages, TextureView};
 
 // this is mostly copied from the NoiseRenderer example
 
 pub(crate) struct TransformRenderer {
-    texture_view: wgpu::TextureView,
+    textures: Textures,
     sampler: wgpu::Sampler,
     bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
     render_pipeline: wgpu::RenderPipeline,
     transform_buffer: wgpu::Buffer,
-    // size_buffer: wgpu::Buffer,
     vertex_buffer: wgpu::Buffer,
 }
 
@@ -20,9 +23,7 @@ impl TransformRenderer {
         let shader = wgpu::include_wgsl!("../shaders/transform.wgsl");
         let module = device.create_shader_module(&shader);
 
-        // Create a texture view that will be used as input
-        // This will be used as the render target for the default scaling renderer
-        let texture_view = create_texture_view(pixels, width, height);
+        let textures = Textures::create(pixels, width, height);
 
         // Create a texture sampler with nearest neighbor
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -102,15 +103,24 @@ impl TransformRenderer {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                    },
+                    count: None,
+                },
             ],
         });
         let bind_group = create_bind_group(
             device,
             &bind_group_layout,
-            &texture_view,
+            &textures,
             &sampler,
             &transform_buffer,
-            // &size_buffer,
         );
 
         // Create pipeline
@@ -133,43 +143,51 @@ impl TransformRenderer {
             fragment: Some(wgpu::FragmentState {
                 module: &module,
                 entry_point: "fs_main",
-                targets: &[wgpu::ColorTargetState {
-                    format: pixels.render_texture_format(),
-                    blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent::REPLACE,
-                        alpha: wgpu::BlendComponent::REPLACE,
-                    }),
-                    write_mask: wgpu::ColorWrites::ALL,
-                }],
+                targets: &[
+                    wgpu::ColorTargetState {
+                        format: pixels.render_texture_format(),
+                        blend: Some(wgpu::BlendState {
+                            color: wgpu::BlendComponent::REPLACE,
+                            alpha: wgpu::BlendComponent::REPLACE,
+                        }),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    },
+                    wgpu::ColorTargetState {
+                        format: pixels.render_texture_format(),
+                        blend: Some(wgpu::BlendState {
+                            color: wgpu::BlendComponent::REPLACE,
+                            alpha: wgpu::BlendComponent::REPLACE,
+                        }),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    },
+                ],
             }),
             multiview: None,
         });
 
         Self {
-            texture_view,
+            textures,
             sampler,
             bind_group_layout,
             bind_group,
             render_pipeline,
             transform_buffer,
-            // size_buffer,
             vertex_buffer,
         }
     }
 
-    pub(crate) fn get_texture_view(&self) -> &wgpu::TextureView {
-        &self.texture_view
+    pub(crate) fn get_texture_view(&self) -> &TextureView {
+        &self.textures.input_view
     }
 
     pub(crate) fn resize(&mut self, pixels: &pixels::Pixels, width: u32, height: u32) {
-        self.texture_view = create_texture_view(pixels, width, height);
+        self.textures = Textures::create(pixels, width, height);
         self.bind_group = create_bind_group(
             pixels.device(),
             &self.bind_group_layout,
-            &self.texture_view,
+            &self.textures,
             &self.sampler,
             &self.transform_buffer,
-            // &self.size_buffer,
         );
     }
 
@@ -180,32 +198,124 @@ impl TransformRenderer {
     pub(crate) fn render(
         &self,
         encoder: &mut wgpu::CommandEncoder,
-        render_target: &wgpu::TextureView,
-        clip_rect: (u32, u32, u32, u32),
+        render_target: &TextureView,
+        context: &PixelsContext,
     ) {
-        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("TransformRenderer render pass"),
-            color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: render_target,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                    store: true,
-                },
-            }],
-            depth_stencil_attachment: None,
-        });
-        rpass.set_pipeline(&self.render_pipeline);
-        rpass.set_bind_group(0, &self.bind_group, &[]);
-        rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        rpass.set_scissor_rect(clip_rect.0, clip_rect.1, clip_rect.2, clip_rect.3);
-        rpass.draw(0..3, 0..1);
+        let clip_rect = context.scaling_renderer.clip_rect();
+        {
+            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("TransformRenderer render pass"),
+                color_attachments: &[
+                    wgpu::RenderPassColorAttachment {
+                        view: &self.textures.intermediate_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                            store: true,
+                        },
+                    },
+                    wgpu::RenderPassColorAttachment {
+                        view: render_target,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                            store: true,
+                        },
+                    },
+                ],
+                depth_stencil_attachment: None,
+            });
+            rpass.set_pipeline(&self.render_pipeline);
+            rpass.set_bind_group(0, &self.bind_group, &[]);
+            rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            rpass.set_scissor_rect(clip_rect.0, clip_rect.1, clip_rect.2, clip_rect.3);
+            rpass.draw(0..3, 0..1);
+        }
+    }
+
+    pub fn copy_texture_back(&self, encoder: &mut wgpu::CommandEncoder) {
+        println!("copy_texture_back");
+        encoder.copy_texture_to_texture(
+            self.textures.intermediate.as_image_copy(),
+            self.textures.background.as_image_copy(),
+            self.textures.size,
+        );
     }
 }
 
-fn create_texture_view(pixels: &pixels::Pixels, width: u32, height: u32) -> wgpu::TextureView {
+pub struct Textures {
+    pub size: Extent3d,
+    pub input: Texture,
+    pub input_view: TextureView,
+    pub intermediate: Texture,
+    pub intermediate_view: TextureView,
+    pub background: Texture,
+    pub background_view: TextureView,
+}
+
+impl Textures {
+    pub fn create(pixels: &pixels::Pixels, width: u32, height: u32) -> Self {
+        dbg!(pixels.render_texture_format());
+        let size = Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+        let (input, input_view) = Self::create_texture(
+            pixels,
+            size,
+            TextureUsages::TEXTURE_BINDING | TextureUsages::RENDER_ATTACHMENT,
+        );
+        let (intermediate, intermediate_view) = Self::create_texture(
+            pixels,
+            size,
+            TextureUsages::TEXTURE_BINDING
+                | TextureUsages::RENDER_ATTACHMENT
+                | TextureUsages::COPY_SRC,
+        );
+        let (background, background_view) = Self::create_texture(
+            pixels,
+            size,
+            TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_DST,
+        );
+        Self {
+            size,
+            input,
+            input_view,
+            intermediate,
+            intermediate_view,
+            background,
+            background_view,
+        }
+    }
+
+    fn create_texture(
+        pixels: &pixels::Pixels,
+        size: Extent3d,
+        texture_usages: TextureUsages,
+    ) -> (Texture, TextureView) {
+        let texture = pixels.device().create_texture(&TextureDescriptor {
+            label: None,
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: pixels.render_texture_format(),
+            usage: texture_usages,
+        });
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        (texture, view)
+    }
+}
+
+fn _create_texture_view(
+    pixels: &pixels::Pixels,
+    width: u32,
+    height: u32,
+) -> (Texture, TextureView) {
     let device = pixels.device();
-    let texture_descriptor = wgpu::TextureDescriptor {
+    let texture_descriptor = TextureDescriptor {
         label: None,
         size: pixels::wgpu::Extent3d {
             width,
@@ -214,20 +324,22 @@ fn create_texture_view(pixels: &pixels::Pixels, width: u32, height: u32) -> wgpu
         },
         mip_level_count: 1,
         sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
+        dimension: TextureDimension::D2,
         format: pixels.render_texture_format(),
-        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
+        usage: TextureUsages::TEXTURE_BINDING
+            | TextureUsages::RENDER_ATTACHMENT
+            | TextureUsages::COPY_SRC,
     };
 
-    device
-        .create_texture(&texture_descriptor)
-        .create_view(&wgpu::TextureViewDescriptor::default())
+    let texture = device.create_texture(&texture_descriptor);
+    let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+    (texture, view)
 }
 
 fn create_bind_group(
     device: &wgpu::Device,
     bind_group_layout: &wgpu::BindGroupLayout,
-    texture_view: &wgpu::TextureView,
+    textures: &Textures,
     sampler: &wgpu::Sampler,
     transform_buffer: &wgpu::Buffer,
 ) -> pixels::wgpu::BindGroup {
@@ -237,7 +349,7 @@ fn create_bind_group(
         entries: &[
             wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::TextureView(texture_view),
+                resource: wgpu::BindingResource::TextureView(&textures.input_view),
             },
             wgpu::BindGroupEntry {
                 binding: 1,
@@ -246,6 +358,10 @@ fn create_bind_group(
             wgpu::BindGroupEntry {
                 binding: 2,
                 resource: transform_buffer.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 3,
+                resource: wgpu::BindingResource::TextureView(&textures.background_view),
             },
         ],
     })

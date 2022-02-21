@@ -9,7 +9,8 @@ use anyhow::Result;
 use gui::GuiState;
 use log::error;
 use pan_zoom_debounce::PanZoomDebounce;
-use pixels::{Pixels, SurfaceTexture};
+use pixels::wgpu;
+use pixels::{PixelsBuilder, SurfaceTexture};
 use renderer::TransformRenderer;
 use winit::{
     dpi::LogicalSize,
@@ -63,7 +64,9 @@ fn main(args: Args) -> Result<()> {
         let scale_factor = window.scale_factor() as f32;
         dbg!(scale_factor);
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
-        let pixels = Pixels::new(width, height, surface_texture)?;
+        let pixels = PixelsBuilder::new(width, height, surface_texture)
+            .clear_color(wgpu::Color::TRANSPARENT)
+            .build()?;
         let framework = Framework::new(
             window_size.width,
             window_size.height,
@@ -120,7 +123,6 @@ fn main(args: Args) -> Result<()> {
                     return;
                 }
                 pan_zoom.handle_input(width, height, &input, &pixels);
-
             }
 
             window.request_redraw();
@@ -156,6 +158,10 @@ fn main(args: Args) -> Result<()> {
 
                 // Render everything together
                 let render_result = pixels.render_with(|encoder, render_target, context| {
+                    if pan_zoom.did_input_just_finish() {
+                        transform_renderer.copy_texture_back(encoder);
+                    }
+
                     // Render the world texture
                     context
                         .scaling_renderer
@@ -166,8 +172,13 @@ fn main(args: Args) -> Result<()> {
                     transform_renderer.render(
                         encoder,
                         render_target,
-                        context.scaling_renderer.clip_rect(),
+                        // context.scaling_renderer.clip_rect(),
+                        context,
                     );
+                    // // if pan_zoom.did_input_just_finish() {
+                    // if pan_zoom.is_completed() {
+                    //     transform_renderer.copy_texture_back(encoder);
+                    // }
 
                     // Render egui
                     framework.render(encoder, render_target, context)?;

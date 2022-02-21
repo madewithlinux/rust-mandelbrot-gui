@@ -77,10 +77,11 @@ impl Cell {
     pub fn get_rgba(&self) -> Rgba<u8> {
         match self.state {
             CellState::Uninitialized => Rgba([0, 0, 0, 0]),
-            _ => {
+            CellState::FreshRgb => {
                 let (r, g, b) = self.rgb.into_tuple();
                 Rgba([r, g, b, 0xff])
             }
+            _ => Rgba([0, 0, 0, 0]),
         }
     }
     // pub fn get_rgb(&self) -> Rgb<u8> {
@@ -135,7 +136,7 @@ impl CellGridBuffer {
     }
 
     pub fn draw_with_offset(&self, offset: (i32, i32), screen: &mut [u8], screen_size: (u32, u32)) {
-        fill_checkerboard(screen, screen_size);
+        // fill_checkerboard(screen, screen_size);
 
         // https://docs.rs/image/0.24.0/image/flat/enum.NormalForm.html
         // > The ImageBuffer uses row major form with packed samples.
@@ -157,13 +158,15 @@ impl CellGridBuffer {
             let x = screen_pos.x as u32;
             let y = screen_pos.y as u32;
             let cell = &self.front[grid_pos];
-            match cell.state {
-                CellState::Uninitialized => {}
-                CellState::Stale | CellState::_FreshData => screen_buf
-                    .get_pixel_mut(x, y)
-                    .apply2(&cell.get_rgba(), |a, b| a / 2 + b / 2),
-                CellState::FreshRgb => screen_buf.put_pixel(x, y, cell.get_rgba()),
-            };
+            // match cell.state {
+            //     // CellState::Uninitialized => {}
+            //     // CellState::Stale | CellState::_FreshData => screen_buf
+            //     //     .get_pixel_mut(x, y)
+            //     //     .apply2(&cell.get_rgba(), |a, b| a / 2 + b / 2),
+            //     CellState::FreshRgb => screen_buf.put_pixel(x, y, cell.get_rgba()),
+            //     _ => {},
+            // };
+            screen_buf.put_pixel(x, y, cell.get_rgba());
         }
     }
 

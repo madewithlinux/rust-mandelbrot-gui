@@ -241,6 +241,7 @@ impl FractalWorker {
     }
 
     pub fn apply_offset_and_zoom_factor(&mut self, dx: i32, dy: i32, zoom_factor: f64) {
+        println!("apply_offset_and_zoom_factor");
         self.stop_worker();
         let dx = -dx;
         let dy = -dy;
@@ -248,12 +249,13 @@ impl FractalWorker {
         let mut new_func = self.fractal_func.clone();
         if dx != 0 || dy != 0 {
             new_func = new_func.with_offset(dx, dy);
-            self.grid_buf.apply_offset((dx, dy));
+            // self.grid_buf.apply_offset((dx, dy));
         }
         if (zoom_factor - 1.0).abs() > 0.0001 {
             new_func = new_func.add_zoom(zoom_factor);
-            self.grid_buf.apply_zoom(zoom_factor);
+            // self.grid_buf.apply_zoom(zoom_factor);
         }
+        self.grid_buf.mark_all_positions_stale();
         self.debounce_start_new_worker(new_func);
     }
 

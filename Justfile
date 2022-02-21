@@ -11,10 +11,19 @@ build-gui:
 
 build-all: build-libs build-gui
 
-gui: build-gui
+gui:
+    clear -x
+    just build-gui
     target/release/rust-mandelbrot-gui \
         --fractal-lib target/release/libmandelbrot_f64_new.so \
-        --color-lib   target/release/libcolor_luma_basic.so \
+        --color-lib   target/release/libcolor_luma_basic.so
+
+gui-debug:
+    clear -x
+    cargo build -p rust-mandelbrot-gui
+    RUST_BACKTRACE=1 target/debug/rust-mandelbrot-gui \
+        --fractal-lib target/release/libmandelbrot_f64_new.so \
+        --color-lib   target/release/libcolor_luma_basic.so
 
 check:
     cargo check --release

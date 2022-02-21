@@ -20,6 +20,7 @@ https://docs.rs/imgui/0.8.0/imgui/
 https://docs.rs/polars/latest/polars/
 
 
+https://gpuweb.github.io/gpuweb/wgsl/#integer-types
 
 
 
@@ -39,8 +40,13 @@ https://docs.rs/polars/latest/polars/
 - [x] make a stable abi
 - [x] load fractal impl dynamically
 - [x] separate fractal and colorizer functions
-  - [ ] remove the old mandelbrot func
 - [x] use gpu shader for canvas offset+zoom
+- [x] use gpu shader to map prev rendered buffer to temp data in new position
+- [ ] rewrite the fractal worker thread to not use a grid buf, and only update the pixel buffer as needed
+- [ ] remove the old mandelbrot func
+
+
+
 - [ ] save/load config from json file
 - [ ] be able to reload the dynamic library
   - [ ] use https://docs.rs/libloading/latest/libloading/ for loading dynamic lib?
