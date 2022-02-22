@@ -2,21 +2,19 @@ use std::{
     cmp::min,
     collections::{HashMap, HashSet},
     path::Path,
-    sync::mpsc::{channel, Receiver, Sender},
+    sync::mpsc::{channel, Receiver},
 };
 
 use abi_stable::std_types::{
     RResult::{RErr, ROk},
-    RStr, RString,
+    RString,
 };
 use abi_stable::{library::RootModule, std_types::RSlice};
 use core_extensions::SelfOps;
 use itertools::Itertools;
+use log::{error, info};
 // use rand::{prelude::SliceRandom, thread_rng};
-use rayon::{
-    iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator},
-    slice::ParallelSlice,
-};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use color_func::{
     prelude::{ColorLib_Ref, RColorFuncBox},
@@ -178,7 +176,7 @@ impl FractalWorker {
     }
 
     pub fn apply_offset_and_zoom_factor(&mut self, dx: i32, dy: i32, zoom_factor: f64) {
-        println!("apply_offset_and_zoom_factor");
+        info!("apply_offset_and_zoom_factor");
         self.reset();
         let dx = -dx;
         let dy = -dy;
@@ -194,6 +192,7 @@ impl FractalWorker {
     }
 
     pub fn apply_resize(&mut self, new_size: (u32, u32)) {
+        info!("apply_resize");
         self.start_worker(
             self.fractal_func.with_size(new_size.0, new_size.1),
             None,
@@ -299,12 +298,14 @@ fn start_worker(
     existing_chunks: Vec<RChunk>,
     existing_chunks_offset: [i32; 2],
 ) -> Receiver<WorkerMessage> {
-    println!("starting worker");
+    // println!("starting worker");
+    info!("starting worker");
     let fractal_func = fractal_func.clone();
     let color_func = color_func.clone();
     let (sender, receiver) = channel();
 
     rayon::spawn(move || {
+        info!("worker thread started");
         sender
             .send(WorkerMessage::Init)
             .expect("interrupted before beginning render");
@@ -314,7 +315,7 @@ fn start_worker(
         }
 
         let existing_chunks: Vec<RChunk> = existing_chunks
-            .into_iter()
+            .into_par_iter()
             .map(|chunk| {
                 chunk
                     .into_iter()
@@ -350,6 +351,7 @@ fn start_worker(
         // pixel_positions.as_mut_slice().shuffle(&mut rng);
 
         if existing_chunks.len() > 0 {
+            info!("recolor existing chunks");
             // recolor existing chunks
             let res = existing_chunks
                 .into_par_iter()
@@ -361,9 +363,11 @@ fn start_worker(
                     sender.send(WorkerMessage::Chunk(rchunk, rcolors, epoch))
                 });
             match res {
-                Ok(_) => println!("render complete"),
-                Err(_) => println!("render interrupted"),
+                Ok(_) => info!("existing chunks complete"),
+                Err(_) => info!("existing chunks interrupted"),
             }
+        } else {
+            info!("existing chunks empty");
         }
 
         let res = pixel_positions
@@ -378,8 +382,8 @@ fn start_worker(
             })
             .map(|_| sender.send(WorkerMessage::Finished));
         match res {
-            Ok(_) => println!("render complete"),
-            Err(_) => println!("render interrupted"),
+            Ok(_) => info!("render complete"),
+            Err(_) => info!("render interrupted"),
         }
     });
 

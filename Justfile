@@ -14,7 +14,7 @@ build-all: build-libs build-gui
 gui:
     clear -x
     just build-gui
-    target/release/rust-mandelbrot-gui \
+    RUST_LOG='error,main=INFO,worker=INFO' target/release/rust-mandelbrot-gui \
         --fractal-lib target/release/libmandelbrot_f64_new.so \
         --color-lib   target/release/libcolor_luma_basic.so
 

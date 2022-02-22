@@ -12,6 +12,7 @@ use pan_zoom_debounce::PanZoomDebounce;
 use pixels::wgpu;
 use pixels::{PixelsBuilder, SurfaceTexture};
 use renderer::TransformRenderer;
+use std::io::Write;
 use winit::{
     dpi::LogicalSize,
     event::{Event, VirtualKeyCode},
@@ -19,6 +20,7 @@ use winit::{
     window::WindowBuilder,
 };
 use winit_input_helper::WinitInputHelper;
+
 use worker::fractal_worker2::FractalWorker;
 use worker::util::measure_execution_time;
 
@@ -46,7 +48,19 @@ fn main(args: Args) -> Result<()> {
     let color_lib = args.color_lib;
     let extra_scale_factor = args.extra_scale_factor;
 
-    env_logger::init();
+    // env_logger::init();
+    env_logger::builder()
+        .format(|buf, record| {
+            writeln!(
+                buf,
+                "{} {} {}: {}",
+                buf.timestamp_millis(),
+                record.module_path().unwrap_or("unknown"),
+                record.level(),
+                record.args()
+            )
+        })
+        .init();
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
 
@@ -164,11 +178,7 @@ fn main(args: Args) -> Result<()> {
 
                     transform_renderer.update(&context.queue, pan_zoom.get_render_matrix());
 
-                    transform_renderer.render(
-                        encoder,
-                        render_target,
-                        context,
-                    );
+                    transform_renderer.render(encoder, render_target, context);
 
                     // Render egui
                     framework.render(encoder, render_target, context)?;
