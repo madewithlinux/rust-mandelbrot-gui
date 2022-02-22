@@ -43,7 +43,7 @@ https://gpuweb.github.io/gpuweb/wgsl/#integer-types
 - [x] use gpu shader for canvas offset+zoom
 - [x] use gpu shader to map prev rendered buffer to temp data in new position
 - [x] rewrite the fractal worker thread to not use a grid buf, and only update the pixel buffer as needed
-- [ ] remove the old mandelbrot func
+- [x] remove the old mandelbrot func
 
 
 

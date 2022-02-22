@@ -968,6 +968,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "impl_util"
+version = "0.1.0"
+dependencies = [
+ "abi_stable",
+ "anyhow",
+ "color_func",
+ "env_logger",
+ "fractal_func",
+ "itertools",
+ "log",
+ "num",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1116,21 +1133,6 @@ dependencies = [
 
 [[package]]
 name = "mandelbrot_f64"
-version = "0.1.0"
-dependencies = [
- "abi_stable",
- "anyhow",
- "env_logger",
- "itertools",
- "log",
- "num",
- "serde",
- "serde_json",
- "shared",
-]
-
-[[package]]
-name = "mandelbrot_f64_new"
 version = "0.1.0"
 dependencies = [
  "abi_stable",
@@ -1782,6 +1784,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "rmp"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f55e5fa1446c4d5dd1f5daeed2a4fe193071771a2636274d0d7a3b082aa7ad6"
+dependencies = [
+ "byteorder",
+ "num-traits",
+]
+
+[[package]]
+name = "rmp-serde"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3eedffbfcc6a428f230c04baf8f59bd73c1781361e4286111fe900849aaddaf"
+dependencies = [
+ "byteorder",
+ "rmp",
+ "serde",
+]
+
+[[package]]
 name = "rust-mandelbrot-gui"
 version = "0.1.0"
 dependencies = [
@@ -1914,14 +1937,6 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "shared"
-version = "0.1.0"
-dependencies = [
- "abi_stable",
- "itertools",
 ]
 
 [[package]]

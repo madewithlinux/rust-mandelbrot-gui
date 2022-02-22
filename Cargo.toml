@@ -1,10 +1,7 @@
 [workspace]
 members = [
     "gui",
-    # "gui-sdl2",
-    # "gui-imgui",
     "worker",
-    "shared",
     "interface/fractal_func",
     "interface/color_func",
     "impls/*",

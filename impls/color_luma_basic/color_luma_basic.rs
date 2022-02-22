@@ -1,5 +1,5 @@
 use color_func::prelude::*;
-use mandelbrot_f64::mandelbrot_f64_impl::MandelbrotData;
+use mandelbrot_f64::MandelbrotData;
 
 #[derive(Debug, Clone, Copy)]
 pub struct BasicLumaColorFunc {}
