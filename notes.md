@@ -42,7 +42,7 @@ https://gpuweb.github.io/gpuweb/wgsl/#integer-types
 - [x] separate fractal and colorizer functions
 - [x] use gpu shader for canvas offset+zoom
 - [x] use gpu shader to map prev rendered buffer to temp data in new position
-- [ ] rewrite the fractal worker thread to not use a grid buf, and only update the pixel buffer as needed
+- [x] rewrite the fractal worker thread to not use a grid buf, and only update the pixel buffer as needed
 - [ ] remove the old mandelbrot func
 
 

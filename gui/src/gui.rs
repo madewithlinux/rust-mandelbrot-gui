@@ -7,7 +7,7 @@ use abi_stable::std_types::{RString, Tuple2};
 use egui::{CtxRef, Ui};
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
-use worker::FractalWorker;
+use worker::fractal_worker2::FractalWorker;
 
 use crate::pan_zoom_debounce::PanZoomDebounce;
 

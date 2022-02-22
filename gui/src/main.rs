@@ -19,8 +19,8 @@ use winit::{
     window::WindowBuilder,
 };
 use winit_input_helper::WinitInputHelper;
+use worker::fractal_worker2::FractalWorker;
 use worker::util::measure_execution_time;
-use worker::FractalWorker;
 
 #[derive(Debug, structopt::StructOpt)]
 struct Args {
@@ -142,14 +142,9 @@ fn main(args: Args) -> Result<()> {
         }
 
         match event {
-            Event::MainEventsCleared => {
-                worker.on_main_events_cleared();
-            }
-
             // Draw the current frame
             Event::RedrawRequested(_) => {
-                worker.receive_into_buf();
-                worker.draw_with_offset((0, 0), pixels.get_frame(), (width, height));
+                worker.draw_new_chunks(width, height, pixels.get_frame());
 
                 // Prepare egui (including render UI)
                 framework.prepare(&window, |ctx| {
@@ -172,13 +167,8 @@ fn main(args: Args) -> Result<()> {
                     transform_renderer.render(
                         encoder,
                         render_target,
-                        // context.scaling_renderer.clip_rect(),
                         context,
                     );
-                    // // if pan_zoom.did_input_just_finish() {
-                    // if pan_zoom.is_completed() {
-                    //     transform_renderer.copy_texture_back(encoder);
-                    // }
 
                     // Render egui
                     framework.render(encoder, render_target, context)?;

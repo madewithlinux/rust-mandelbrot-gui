@@ -42,6 +42,8 @@ pub struct RCell {
     pub data: RVec<u8>,
 }
 
+pub type RChunk = RVec<RCell>;
+
 pub type ROptionsMap = RHashMap<RString, RString>;
 
 #[sabi_trait]
@@ -50,7 +52,7 @@ pub trait RFractalFunc: Clone + Debug + Sync + Send + 'static {
 
     fn get_size(&self) -> Tuple2<u32, u32>;
 
-    fn compute_cells(&self, positions: RSlice<[u32; 2]>) -> RVec<RCell>;
+    fn compute_cells(&self, positions: RSlice<[u32; 2]>) -> RChunk;
 
     fn with_size(&self, width: u32, height: u32) -> RFractalFuncBox;
     fn with_offset(&self, dx: i32, dy: i32) -> RFractalFuncBox;
@@ -70,6 +72,7 @@ pub type RFractalFuncArc = RFractalFunc_TO<RArc<()>>;
 
 pub mod prelude {
     pub use super::RCell;
+    pub use super::RChunk;
     pub use super::ROptionsMap;
     pub use super::{FractalLib, FractalLib_Ref};
     pub use super::{RFractalFunc, RFractalFuncArc, RFractalFuncBox};
