@@ -1,28 +1,25 @@
-use color_func::prelude::*;
+use color_func::{prelude::*, RChunk};
+use impl_util::compute_colors_rmp;
 use mandelbrot_f64::MandelbrotData;
 
 #[derive(Debug, Clone, Copy)]
 pub struct BasicLumaColorFunc {}
 
-impl BasicLumaColorFunc {}
-
-impl RColorFunc for BasicLumaColorFunc {
-    fn compute_color(&self, cell: &RCell) -> RColor {
-        let &RCell { pos, data } = &cell;
-        let MandelbrotData { iter, outside } =
-            serde_json::from_slice(&data).expect("deserialization failed");
+impl BasicLumaColorFunc {
+    fn compute_color_impl(&self, data: &MandelbrotData) -> [u8; 3] {
+        let MandelbrotData { iter, outside } = *data;
         let luma = if outside {
             ((iter as f32).sqrt().sin().powi(2) * 255.0) as u8
         } else {
             0
         };
-        RColor {
-            pos: *pos,
-            rgb: [luma, luma, luma],
-        }
+        [luma, luma, luma]
     }
-    fn compute_colors(&self, cells: RSlice<RCell>) -> RVec<RColor> {
-        cells.iter().map(|cell| self.compute_color(cell)).collect()
+}
+
+impl RColorFunc for BasicLumaColorFunc {
+    fn compute_colors(&self, chunk: &RChunk) -> RVec<RColor> {
+        compute_colors_rmp(chunk, |d| self.compute_color_impl(d))
     }
 }
 

@@ -15,6 +15,7 @@ use abi_stable::{
 };
 
 pub use fractal_func::RCell;
+pub use fractal_func::RChunk;
 
 #[repr(C)]
 #[derive(StableAbi)]
@@ -48,8 +49,7 @@ pub type ROptionsMap = RHashMap<RString, RString>;
 
 #[sabi_trait]
 pub trait RColorFunc: Clone + Debug + Sync + Send + 'static {
-    fn compute_color(&self, cell: &RCell) -> RColor;
-    fn compute_colors(&self, cells: RSlice<RCell>) -> RVec<RColor>;
+    fn compute_colors(&self, chunk: &RChunk) -> RVec<RColor>;
 
     fn with_option(&self, _name: RStr, _value: RStr) -> RResult<RColorFuncBox, RString> {
         RResult::RErr(RString::from("unimplemented"))

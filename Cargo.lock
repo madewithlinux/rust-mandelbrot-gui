@@ -326,6 +326,7 @@ dependencies = [
  "anyhow",
  "color_func",
  "env_logger",
+ "impl_util",
  "itertools",
  "log",
  "mandelbrot_f64",
@@ -981,7 +982,6 @@ dependencies = [
  "num",
  "rmp-serde",
  "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -1140,6 +1140,7 @@ dependencies = [
  "color_func",
  "env_logger",
  "fractal_func",
+ "impl_util",
  "itertools",
  "log",
  "num",

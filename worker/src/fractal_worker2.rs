@@ -274,8 +274,8 @@ fn get_incomplete_pixel_positions(
         .collect();
 
     for chunk in existing_chunks {
-        for cell in chunk {
-            coordinates.remove(&cell.pos);
+        for (pos, _) in chunk.iter() {
+            coordinates.remove(&pos);
         }
     }
 
@@ -314,25 +314,25 @@ fn start_worker(
             dbg!(existing_chunks_offset);
         }
 
-        let existing_chunks: Vec<RChunk> = existing_chunks
-            .into_par_iter()
-            .map(|chunk| {
-                chunk
-                    .into_iter()
-                    .filter_map(|mut cell| {
-                        let x = cell.pos[0] as i32 + existing_chunks_offset[0];
-                        let y = cell.pos[1] as i32 + existing_chunks_offset[1];
-                        if x < 0 || y < 0 || x >= width as i32 || y >= height as i32 {
-                            None
-                        } else {
-                            cell.pos[0] = x as u32;
-                            cell.pos[1] = y as u32;
-                            Some(cell)
-                        }
-                    })
-                    .collect()
-            })
-            .collect();
+        // let existing_chunks: Vec<RChunk> = existing_chunks
+        //     .into_par_iter()
+        //     .map(|chunk| {
+        //         chunk
+        //             .into_iter()
+        //             .filter_map(|mut cell| {
+        //                 let x = cell.pos[0] as i32 + existing_chunks_offset[0];
+        //                 let y = cell.pos[1] as i32 + existing_chunks_offset[1];
+        //                 if x < 0 || y < 0 || x >= width as i32 || y >= height as i32 {
+        //                     None
+        //                 } else {
+        //                     cell.pos[0] = x as u32;
+        //                     cell.pos[1] = y as u32;
+        //                     Some(cell)
+        //                 }
+        //             })
+        //             .collect()
+        //     })
+        //     .collect();
 
         // for chunk in existing_chunks.iter_mut() {
         //     for cell in chunk.iter_mut() {
@@ -356,7 +356,7 @@ fn start_worker(
             let res = existing_chunks
                 .into_par_iter()
                 .map(|rchunk| {
-                    let rcolors = color_func.compute_colors(rchunk.as_rslice());
+                    let rcolors = color_func.compute_colors(&rchunk);
                     (rchunk, rcolors)
                 })
                 .try_for_each_with(sender.clone(), |sender, (rchunk, rcolors)| {
@@ -374,7 +374,7 @@ fn start_worker(
             .into_par_iter()
             .map(|positions| {
                 let rchunk = fractal_func.compute_cells(RSlice::from(positions.as_slice()));
-                let rcolors = color_func.compute_colors(rchunk.as_rslice());
+                let rcolors = color_func.compute_colors(&rchunk);
                 (rchunk, rcolors)
             })
             .try_for_each_with(sender.clone(), |sender, (rchunk, rcolors)| {

@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::iter::once;
 use std::path::Path;
 
 use abi_stable::library::LibraryError;
@@ -42,7 +43,33 @@ pub struct RCell {
     pub data: RVec<u8>,
 }
 
-pub type RChunk = RVec<RCell>;
+#[repr(C)]
+#[derive(Debug, Clone, StableAbi)]
+pub struct RChunk {
+    // tuple of (pos, data_start_index)
+    // the last one goes to the end of the data array
+    pub pos_indexes: RVec<Tuple2<[u32; 2], usize>>,
+    pub data: RVec<u8>,
+}
+impl RChunk {
+    pub fn len(&self) -> usize {
+        self.pos_indexes.len()
+    }
+    pub fn iter(&self) -> impl Iterator<Item = ([u32; 2], &[u8])> {
+        self.pos_indexes
+            .iter()
+            .zip(
+                self.pos_indexes
+                    .iter()
+                    .skip(1)
+                    .map(|Tuple2(_, i)| *i)
+                    .chain(once(self.data.len())),
+            )
+            .map(|(Tuple2(pos, data_start_index), data_end_index)| {
+                (*pos, &self.data[*data_start_index..data_end_index])
+            })
+    }
+}
 
 pub type ROptionsMap = RHashMap<RString, RString>;
 
@@ -81,7 +108,7 @@ pub mod prelude {
     pub use abi_stable::std_types::{
         RHashMap, RResult, RSlice, RStr, RString, RVec, Tuple2, Tuple3,
     };
-    pub use abi_stable::{rtry, rtuple, rstr};
+    pub use abi_stable::{rstr, rtry, rtuple};
 
     pub use abi_stable::erased_types::{TD_CanDowncast, TD_Opaque};
     pub use abi_stable::library::RootModule;

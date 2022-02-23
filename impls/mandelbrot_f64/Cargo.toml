@@ -12,6 +12,7 @@ cdylib = []
 [dependencies]
 color_func = { path = "../../interface/color_func" }
 fractal_func = { path = "../../interface/fractal_func" }
+impl_util = { path = "../util" }
 abi_stable = { version = "0.10.4", features = ["rust_latest_stable"] }
 
 

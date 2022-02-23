@@ -1,3 +1,4 @@
+use impl_util::compute_cells_rmp;
 use num::complex::Complex64;
 use num::Zero;
 use serde::{Deserialize, Serialize};
@@ -45,7 +46,7 @@ impl MandelbrotCellFunc {
         }
     }
 
-    fn compute_cell(&self, pos: [u32; 2]) -> RCell {
+    fn compute_cell_impl(&self, pos: [u32; 2]) -> MandelbrotData {
         let max_iterations = self.max_iter;
         let magnitude_threshold_sqr = 4.0;
         let mut z = Complex64::zero();
@@ -66,13 +67,7 @@ impl MandelbrotCellFunc {
                 break;
             }
         }
-
-        RCell {
-            pos,
-            data: serde_json::to_vec(&MandelbrotData { outside, iter })
-                .expect("to json")
-                .into(),
-        }
+        MandelbrotData { outside, iter }
     }
 }
 
@@ -91,11 +86,8 @@ impl RFractalFunc for MandelbrotCellFunc {
         rtuple!(self.width, self.height)
     }
 
-    fn compute_cells(&self, positions: RSlice<[u32; 2]>) -> RVec<RCell> {
-        positions
-            .iter()
-            .map(|&pos| self.compute_cell(pos))
-            .collect()
+    fn compute_cells(&self, positions: RSlice<[u32; 2]>) -> RChunk {
+        compute_cells_rmp(positions, |pos| self.compute_cell_impl(pos))
     }
 
     fn with_size(&self, width: u32, height: u32) -> RFractalFuncBox {
