@@ -1,22 +1,8 @@
-use std::iter::once;
-
-use abi_stable::{
-    std_types::{RSlice, RVec, Tuple2},
-    StableAbi,
-};
+use abi_stable::std_types::{RSlice, RVec, Tuple2};
 use color_func::RColor;
-use fractal_func::{RCell, RChunk};
+use fractal_func::RChunk;
 use rmp_serde::{self, Serializer};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-
-// #[repr(C)]
-// #[derive(Debug, Clone, StableAbi)]
-// pub struct RChunk {
-//     // tuple of (pos, data_start_index)
-//     // the last one goes to the end of the data array
-//     pos_indexes: RVec<Tuple2<[u32; 2], usize>>,
-//     data: RVec<u8>,
-// }
+use serde::{Deserialize, Serialize};
 
 #[inline]
 pub fn compute_cells_rmp<F, C>(positions: RSlice<[u32; 2]>, func: F) -> RChunk

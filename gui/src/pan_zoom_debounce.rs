@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use pixels::Pixels;
-use ultraviolet::{IVec2, Mat4, Similarity3, Vec3};
+use ultraviolet::{IVec2, Mat4, Similarity3, Vec2, Vec3};
 use winit_input_helper::WinitInputHelper;
 
 #[derive(Debug, Clone, Copy)]
@@ -91,26 +91,30 @@ impl PanZoomDebounce {
         self.prev_mouse_pos = Some(mouse_pos);
     }
 
-    fn handle_scroll_diff(&mut self, _mouse_pos: (f32, f32), scroll_diff: f32) {
+    fn handle_scroll_diff(&mut self, mouse_pos: (f32, f32), scroll_diff: f32) {
         assert!(scroll_diff != 0.0);
         let zoom_factor = if scroll_diff > 0.0 { 1.0 / 1.1 } else { 1.1 };
 
-        // // TODO: get it to work with like zooming into where the mouse is
-        // let mouse_pos: Vec2 = mouse_pos.into();
-        // let mouse_pos: Vec3 = mouse_pos.into();
-        // let width = self.width as f32;
-        // let height = self.height as f32;
-        // let zoom_middle: Vec3 = mouse_pos - Vec3::new(width / 2.0, height / 2.0, 0.0);
-        // let mut s = Similarity3::identity();
-        // s.append_translation(zoom_middle);
-        // s.append_scaling(zoom_factor);
-        // s.append_translation(-zoom_middle);
-        // self.transform.append_similarity(s);
+        let mouse_pos: Vec2 = mouse_pos.into();
+        let mouse_pos: Vec3 = mouse_pos.into();
+        let width = self.width as f32;
+        let height = self.height as f32;
+        let mouse_from_middle: Vec3 = mouse_pos - Vec3::new(width / 2.0, height / 2.0, 0.0);
 
-        let translation = self.transform.translation;
+        let mouse_before = self.transform.transform_vec(mouse_from_middle);
+        let translation_before = self.transform.translation;
+
         self.transform.append_scaling(zoom_factor);
+
+        // this fixes zoom after translation
         self.transform
-            .append_translation(-(zoom_factor - 1.0) * translation);
+            .append_translation(-(zoom_factor - 1.0) * translation_before);
+
+        // this makes the cursor position hold in place
+        let mouse_after = self.transform.transform_vec(mouse_from_middle);
+        self.transform
+            .append_translation(mouse_after - mouse_before);
+
         self.last_update = Instant::now();
         self.is_dirty = true;
     }
