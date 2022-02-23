@@ -198,6 +198,7 @@ impl FractalWorker {
             None,
             new_size,
         );
+        // TODO: move around the stuff in pixels.frame so that it's in the right place, instead of clearing it
         self.reset();
     }
 

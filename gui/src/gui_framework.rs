@@ -39,6 +39,9 @@ impl Framework {
         self.egui_state.on_event(&self.egui_ctx, event)
     }
 
+    pub(crate) fn wants_keyboard_input(&self) -> bool {
+        self.egui_ctx.wants_keyboard_input()
+    }
     pub(crate) fn wants_pointer_input(&self) -> bool {
         self.egui_ctx.wants_pointer_input()
     }

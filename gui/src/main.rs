@@ -6,6 +6,7 @@ mod renderer;
 
 use crate::gui_framework::Framework;
 use anyhow::Result;
+use egui_wgpu_backend::wgpu::Extent3d;
 use gui::GuiState;
 use log::error;
 use pan_zoom_debounce::PanZoomDebounce;
@@ -42,8 +43,8 @@ struct Args {
 
 #[paw::main]
 fn main(args: Args) -> Result<()> {
-    let mut width = args.width;
-    let mut height = args.height;
+    let mut window_width = args.width;
+    let mut window_height = args.height;
     let fractal_lib = args.fractal_lib;
     let color_lib = args.color_lib;
     let extra_scale_factor = args.extra_scale_factor;
@@ -65,7 +66,7 @@ fn main(args: Args) -> Result<()> {
     let mut input = WinitInputHelper::new();
 
     let window = {
-        let size = LogicalSize::new(width as f64, height as f64);
+        let size = LogicalSize::new(window_width as f64, window_height as f64);
         WindowBuilder::new()
             .with_title("fractal app")
             .with_inner_size(size)
@@ -78,7 +79,7 @@ fn main(args: Args) -> Result<()> {
         let scale_factor = window.scale_factor() as f32;
         dbg!(scale_factor);
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
-        let pixels = PixelsBuilder::new(width, height, surface_texture)
+        let pixels = PixelsBuilder::new(window_width, window_height, surface_texture)
             .clear_color(wgpu::Color::TRANSPARENT)
             .build()?;
         let framework = Framework::new(
@@ -92,10 +93,10 @@ fn main(args: Args) -> Result<()> {
         (pixels, framework)
     };
 
-    let mut pan_zoom = PanZoomDebounce::new(width, height);
-    let mut worker = FractalWorker::new(width, height, &fractal_lib, &color_lib);
+    let mut pan_zoom = PanZoomDebounce::new(window_width, window_height);
+    let mut worker = FractalWorker::new(window_width, window_height, &fractal_lib, &color_lib);
     let mut gui_state = GuiState::default();
-    let mut transform_renderer = TransformRenderer::new(&pixels, width, height);
+    let mut transform_renderer = TransformRenderer::new(&pixels, window_width, window_height);
 
     event_loop.run(move |event, _, control_flow| {
         // Update egui inputs
@@ -119,24 +120,27 @@ fn main(args: Args) -> Result<()> {
 
             // Resize the window
             if let Some(size) = input.window_resized() {
-                dbg!(size);
-                pixels.resize_surface(size.width, size.height);
-                pixels.resize_buffer(size.width, size.height);
-                transform_renderer.resize(&pixels, size.width, size.height);
+                dbg!("input.window_resized()", size.width, size.height);
+                window_width = size.width;
+                window_height = size.height;
                 framework.resize(size.width, size.height);
-                width = size.width;
-                height = size.height;
-                measure_execution_time("worker.apply_resize", || {
-                    worker.apply_resize((width, height));
-                });
+                pixels.resize_surface(size.width, size.height);
+                transform_renderer.resize(&pixels, size.width, size.height);
             }
 
-            if !framework.wants_pointer_input() {
+            if !framework.wants_keyboard_input() {
                 if input.key_pressed(VirtualKeyCode::Escape) {
                     *control_flow = ControlFlow::Exit;
                     return;
+                } else if input.key_pressed(VirtualKeyCode::I) {
+                    gui_state.window_visible = true;
+                } else if input.key_pressed(VirtualKeyCode::F) {
+                    // toggle fullscreen
+                    gui_state.window_visible = !gui_state.window_visible;
                 }
-                pan_zoom.handle_input(width, height, &input, &pixels);
+            }
+            if !framework.wants_pointer_input() {
+                pan_zoom.handle_input(window_width, window_height, &input, &pixels);
             }
 
             window.request_redraw();
@@ -158,12 +162,30 @@ fn main(args: Args) -> Result<()> {
         match event {
             // Draw the current frame
             Event::RedrawRequested(_) => {
-                worker.draw_new_chunks(width, height, pixels.get_frame());
+                {
+                    let Extent3d { width, height, .. } = pixels.context().texture_extent;
+                    worker.draw_new_chunks(width, height, pixels.get_frame());
+                }
 
                 // Prepare egui (including render UI)
                 framework.prepare(&window, |ctx| {
-                    gui_state.draw_gui(ctx, &mut worker, &pan_zoom, &fractal_lib);
+                    gui_state.draw_gui(
+                        ctx,
+                        window_width,
+                        window_height,
+                        &mut worker,
+                        &pan_zoom,
+                        &fractal_lib,
+                    );
                 });
+
+                if gui_state.match_window_size && (window_width, window_height) != worker.get_size()
+                {
+                    pixels.resize_buffer(window_width, window_height);
+                    measure_execution_time("worker.apply_resize", || {
+                        worker.apply_resize((window_width, window_height));
+                    });
+                }
 
                 // Render everything together
                 let render_result = pixels.render_with(|encoder, render_target, context| {
