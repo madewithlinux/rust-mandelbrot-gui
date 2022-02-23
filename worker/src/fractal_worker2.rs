@@ -314,6 +314,7 @@ fn start_worker(
             dbg!(existing_chunks_offset);
         }
 
+        // TODO: fix the existing chunk recoloring thingy to work with new chunk type
         // let existing_chunks: Vec<RChunk> = existing_chunks
         //     .into_par_iter()
         //     .map(|chunk| {
@@ -341,34 +342,36 @@ fn start_worker(
         //     }
         // }
 
-        let pixel_positions = if existing_chunks.len() > 0 {
-            get_incomplete_pixel_positions(width, height, chunk_size, &existing_chunks)
-        } else {
-            get_all_pixel_positions(width, height, chunk_size)
-        };
+        // let pixel_positions = if existing_chunks.len() > 0 {
+        //     get_incomplete_pixel_positions(width, height, chunk_size, &existing_chunks)
+        // } else {
+        //     get_all_pixel_positions(width, height, chunk_size)
+        // };
 
-        // let mut rng = thread_rng();
-        // pixel_positions.as_mut_slice().shuffle(&mut rng);
+        // // let mut rng = thread_rng();
+        // // pixel_positions.as_mut_slice().shuffle(&mut rng);
 
-        if existing_chunks.len() > 0 {
-            info!("recolor existing chunks");
-            // recolor existing chunks
-            let res = existing_chunks
-                .into_par_iter()
-                .map(|rchunk| {
-                    let rcolors = color_func.compute_colors(&rchunk);
-                    (rchunk, rcolors)
-                })
-                .try_for_each_with(sender.clone(), |sender, (rchunk, rcolors)| {
-                    sender.send(WorkerMessage::Chunk(rchunk, rcolors, epoch))
-                });
-            match res {
-                Ok(_) => info!("existing chunks complete"),
-                Err(_) => info!("existing chunks interrupted"),
-            }
-        } else {
-            info!("existing chunks empty");
-        }
+        // if existing_chunks.len() > 0 {
+        //     info!("recolor existing chunks");
+        //     // recolor existing chunks
+        //     let res = existing_chunks
+        //         .into_par_iter()
+        //         .map(|rchunk| {
+        //             let rcolors = color_func.compute_colors(&rchunk);
+        //             (rchunk, rcolors)
+        //         })
+        //         .try_for_each_with(sender.clone(), |sender, (rchunk, rcolors)| {
+        //             sender.send(WorkerMessage::Chunk(rchunk, rcolors, epoch))
+        //         });
+        //     match res {
+        //         Ok(_) => info!("existing chunks complete"),
+        //         Err(_) => info!("existing chunks interrupted"),
+        //     }
+        // } else {
+        //     info!("existing chunks empty");
+        // }
+
+        let pixel_positions = get_all_pixel_positions(width, height, chunk_size);
 
         let res = pixel_positions
             .into_par_iter()

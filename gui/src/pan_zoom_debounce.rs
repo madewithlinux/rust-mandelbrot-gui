@@ -107,7 +107,10 @@ impl PanZoomDebounce {
         // s.append_translation(-zoom_middle);
         // self.transform.append_similarity(s);
 
+        let translation = self.transform.translation;
         self.transform.append_scaling(zoom_factor);
+        self.transform
+            .append_translation(-(zoom_factor - 1.0) * translation);
         self.last_update = Instant::now();
         self.is_dirty = true;
     }
