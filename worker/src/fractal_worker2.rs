@@ -12,9 +12,12 @@ use abi_stable::std_types::{
 use abi_stable::{library::RootModule, std_types::RSlice};
 use core_extensions::SelfOps;
 use itertools::Itertools;
-use log::{error, info};
-// use rand::{prelude::SliceRandom, thread_rng};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use log::info;
+use rand::{prelude::SliceRandom, thread_rng};
+use rayon::{
+    current_num_threads,
+    iter::{IntoParallelIterator, ParallelIterator},
+};
 
 use color_func::{
     prelude::{ColorLib_Ref, RColorFuncBox},
@@ -72,7 +75,7 @@ impl FractalWorker {
             epoch: 0,
             state: WorkerState::Init,
             receiver: None,
-            chunk_size: 1024,
+            chunk_size: 32,
             chunks: vec![],
             should_clear_screen: true,
             //
@@ -253,17 +256,26 @@ fn draw_chunk_colors(rcolors: RVec<RColor>, width: u32, screen: &mut [u8]) {
 }
 
 fn get_all_pixel_positions(width: u32, height: u32, chunk_size: usize) -> Vec<Vec<[u32; 2]>> {
-    (0..height)
-        .cartesian_product(0..width)
-        .map(|(y, x)| [x, y])
-        .sorted()
-        .chunks(chunk_size)
-        .into_iter()
-        .map(|vs| vs.collect_vec())
-        .collect_vec()
+    let num_chunks = (0..width).step_by(chunk_size).len() * (0..height).step_by(chunk_size).len();
+    info!(
+        "chunk_size={chunk_size}, num_chunks={num_chunks}, per thread: {}",
+        num_chunks / current_num_threads()
+    );
+    let mut chunks = Vec::with_capacity(num_chunks);
+    for xmin in (0..width).step_by(chunk_size) {
+        for ymin in (0..height).step_by(chunk_size) {
+            chunks.push(
+                (xmin..min(width, xmin + chunk_size as u32))
+                    .cartesian_product(ymin..min(height, ymin + chunk_size as u32))
+                    .map(|(x, y)| [x, y])
+                    .collect_vec(),
+            );
+        }
+    }
+    chunks
 }
 
-fn get_incomplete_pixel_positions(
+fn _get_incomplete_pixel_positions(
     width: u32,
     height: u32,
     chunk_size: usize,
@@ -296,7 +308,7 @@ fn start_worker(
     color_func: &RColorFuncBox,
     epoch: u32,
     chunk_size: usize,
-    existing_chunks: Vec<RChunk>,
+    _existing_chunks: Vec<RChunk>,
     existing_chunks_offset: [i32; 2],
 ) -> Receiver<WorkerMessage> {
     // println!("starting worker");
@@ -349,9 +361,6 @@ fn start_worker(
         //     get_all_pixel_positions(width, height, chunk_size)
         // };
 
-        // // let mut rng = thread_rng();
-        // // pixel_positions.as_mut_slice().shuffle(&mut rng);
-
         // if existing_chunks.len() > 0 {
         //     info!("recolor existing chunks");
         //     // recolor existing chunks
@@ -372,7 +381,12 @@ fn start_worker(
         //     info!("existing chunks empty");
         // }
 
-        let pixel_positions = get_all_pixel_positions(width, height, chunk_size);
+        let pixel_positions = {
+            let mut pixel_positions = get_all_pixel_positions(width, height, chunk_size);
+            let mut rng = thread_rng();
+            pixel_positions.as_mut_slice().shuffle(&mut rng);
+            pixel_positions
+        };
 
         let res = pixel_positions
             .into_par_iter()
