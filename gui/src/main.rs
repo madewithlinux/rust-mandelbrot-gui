@@ -175,6 +175,7 @@ fn main(args: Args) -> Result<()> {
                         window_height,
                         &mut worker,
                         &pan_zoom,
+                        &color_lib,
                         &fractal_lib,
                     );
                 });

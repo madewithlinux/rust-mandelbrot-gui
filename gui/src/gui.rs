@@ -60,52 +60,54 @@ impl GuiState {
         window_height: u32,
         worker: &mut FractalWorker,
         pan_zoom: &PanZoomDebounce,
-        lib_path: &str,
+        color_lib_path: &str,
+        fractal_lib_path: &str,
     ) {
         self.update_frame_time();
 
         let mut open = self.window_visible;
         egui::Window::new("fractal app")
-        .open(&mut open)
-        .show(&ctx, |ui| {
-            ui.label("fractal app");
+            .open(&mut open)
+            .show(&ctx, |ui| {
+                ui.label("fractal app");
 
-            ui.separator();
+                ui.separator();
 
-            ui.label("render progress");
-            ui.add(
-                egui::ProgressBar::new(worker.get_progress())
-                    .show_percentage()
-                    .animate(true),
-            );
+                ui.label("render progress");
+                ui.add(
+                    egui::ProgressBar::new(worker.get_progress())
+                        .show_percentage()
+                        .animate(true),
+                );
 
-            ui.checkbox(&mut self.match_window_size, "match window size");
+                ui.checkbox(&mut self.match_window_size, "match window size");
 
-            egui::CollapsingHeader::new("general info")
-                .default_open(true)
-                .show(ui, |ui| {
-                    self.general_info_grid(
-                        ui,
-                        window_width,
-                        window_height,
-                        worker,
-                        pan_zoom,
-                        lib_path,
-                    );
+                egui::CollapsingHeader::new("general info")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        self.general_info_grid(
+                            ui,
+                            window_width,
+                            window_height,
+                            worker,
+                            pan_zoom,
+                            color_lib_path,
+                            fractal_lib_path,
+                        );
+                    });
+
+                egui::CollapsingHeader::new("fractal options")
+                    .default_open(false)
+                    .show(ui, |ui| {
+                        self.fractal_options_grid(ui, worker);
+                    });
+
+                ui.horizontal(|ui| {
+                    if ui.button("reload lib").clicked() {
+                        println!("TODO: reload library")
+                    }
                 });
-
-            egui::CollapsingHeader::new("fractal options")
-                .default_open(false)
-                .show(ui, |ui| {
-                    self.fractal_options_grid(ui, worker);
-                });
-
-            ui.horizontal(|ui| {
-                if ui.button("reload lib").clicked() {
-                    println!("TODO: reload library")
-                }
             });
-        });
         self.window_visible = open;
     }
 
@@ -126,7 +128,8 @@ impl GuiState {
         window_height: u32,
         worker: &mut FractalWorker,
         pan_zoom: &PanZoomDebounce,
-        lib_path: &str,
+        color_lib_path: &str,
+        fractal_lib_path: &str,
     ) {
         let (canvas_width, canvas_height) = worker.get_size();
         egui::Grid::new("info")
@@ -136,19 +139,26 @@ impl GuiState {
                 // ui.style_mut().wrap = Some(true);
                 // ui.set_max_width(400.0);
 
-                ui.label("avg frame time:");
-                ui.label(format!("{:.1} ms", self.avg_frame_time() * 1000.0));
-                ui.end_row();
-                ui.label("max frame time:");
-                ui.label(format!("{:.1} ms", self.max_frame_time() * 1000.0));
+                ui.label("frame time avg (max):");
+                ui.label(format!(
+                    "{:.1} ms ({:.1} ms)",
+                    self.avg_frame_time() * 1000.0,
+                    self.max_frame_time() * 1000.0
+                ));
                 ui.end_row();
 
+                ui.label("window size:");
+                ui.label(format!("{}x{}", window_width, window_height));
+                ui.end_row();
                 ui.label("canvas size:");
                 ui.label(format!("{}x{}", canvas_width, canvas_height));
                 ui.end_row();
 
-                ui.label("lib path:");
-                ui.label(lib_path);
+                ui.label("color lib path:");
+                ui.label(color_lib_path);
+                ui.end_row();
+                ui.label("fractal lib path:");
+                ui.label(fractal_lib_path);
                 ui.end_row();
 
                 // ui.label("pan zoom state");
