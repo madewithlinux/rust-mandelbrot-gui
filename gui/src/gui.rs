@@ -3,7 +3,7 @@ use std::{
     time::Instant,
 };
 
-use abi_stable::std_types::{RString, Tuple2};
+use abi_stable::std_types::{RHashMap, RString, Tuple2};
 use egui::{CtxRef, Ui};
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
@@ -15,22 +15,27 @@ const FRAME_TIMES_COUNT: usize = 60;
 
 #[derive(Debug)]
 pub struct GuiState {
-    pub edited_fractal_options: HashMap<RString, String>,
+    // pub edited_fractal_options: HashMap<RString, String>,
     pub match_window_size: bool,
     pub window_visible: bool,
     //
     frame_times: VecDeque<OrderedFloat<f64>>,
     last_frame_time: Instant,
+    //
+    fractal_options: OptionsGrid,
+    color_options: OptionsGrid,
 }
 
 impl Default for GuiState {
     fn default() -> Self {
         Self {
-            edited_fractal_options: Default::default(),
+            // edited_fractal_options: Default::default(),
             match_window_size: true,
             window_visible: true,
             frame_times: Default::default(),
             last_frame_time: Instant::now(),
+            fractal_options: Default::default(),
+            color_options: Default::default(),
         }
     }
 }
@@ -98,9 +103,10 @@ impl GuiState {
 
                 egui::CollapsingHeader::new("fractal options")
                     .default_open(false)
-                    .show(ui, |ui| {
-                        self.fractal_options_grid(ui, worker);
-                    });
+                    .show(ui, |ui| self.fractal_options_grid(ui, worker));
+                egui::CollapsingHeader::new("color options")
+                    .default_open(false)
+                    .show(ui, |ui| self.color_options_grid(ui, worker));
 
                 ui.horizontal(|ui| {
                     if ui.button("reload lib").clicked() {
@@ -110,16 +116,6 @@ impl GuiState {
             });
         self.window_visible = open;
     }
-
-    // fn gui_options_grid(&mut self, ui: &mut Ui) {
-    //     egui::Grid::new("GUI options")
-    //         .num_columns(2)
-    //         .striped(true)
-    //         .show(ui, |ui| {
-    //             ui.label("match window size");
-    //             ui.checkbox(&mut self.match_window_size, "match window size");
-    //         });
-    // }
 
     fn general_info_grid(
         &mut self,
@@ -181,39 +177,89 @@ impl GuiState {
     }
 
     fn fractal_options_grid(&mut self, ui: &mut Ui, worker: &mut FractalWorker) {
-        egui::Grid::new("fractal options")
-            .num_columns(3)
+        self.fractal_options
+            .update_from_live_options(worker.get_fractal_options());
+        if let Some(new_options) = self.fractal_options.options_grid(ui, "fractal options") {
+            worker.set_fractal_options(new_options);
+        }
+    }
+
+    fn color_options_grid(&mut self, ui: &mut Ui, worker: &mut FractalWorker) {
+        self.color_options
+            .update_from_live_options(worker.get_color_options());
+        if let Some(new_options) = self.color_options.options_grid(ui, "color options") {
+            worker.set_color_options(new_options);
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct OptionsGrid {
+    live_options: RHashMap<RString, RString>,
+    pending_options: HashMap<String, String>,
+}
+
+impl OptionsGrid {
+    fn revert_from_live_options(&mut self) {
+        self.pending_options = self
+            .live_options
+            .iter()
+            .map(|Tuple2(k, v)| (k.to_string(), v.to_string()))
+            .collect();
+    }
+
+    pub fn update_from_live_options(&mut self, live_options: RHashMap<RString, RString>) {
+        if self.live_options != live_options {
+            self.live_options = live_options;
+            self.revert_from_live_options();
+        }
+    }
+
+    fn get_edited_options(&self) -> Option<RHashMap<RString, RString>> {
+        let edited_options: RHashMap<RString, RString> = self
+            .pending_options
+            .iter()
+            .map(|(k, v)| (RString::from(k.as_str()), RString::from(v.as_str())))
+            .filter(|(k, v)| self.live_options.get(k) != Some(v))
+            .collect();
+
+        if edited_options.is_empty() {
+            None
+        } else {
+            Some(edited_options)
+        }
+    }
+
+    pub fn options_grid(&mut self, ui: &mut Ui, id: &str) -> Option<RHashMap<RString, RString>> {
+        egui::Grid::new(id)
+            .num_columns(2)
             .striped(true)
             .show(ui, |ui| {
-                for Tuple2(key, value) in worker.get_fractal_options().into_iter().sorted() {
+                let mut should_return_options = false;
+
+                for (key, value) in self.pending_options.iter_mut().sorted() {
                     ui.label(key.as_str());
-                    ui.label(value.as_str());
-                    let value_to_edit = self.edited_fractal_options.entry(key).or_default();
-                    let response = ui.text_edit_singleline(value_to_edit);
+                    let response = ui.text_edit_singleline(value);
                     if response.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
-                        self.set_fractal_options(worker);
+                        should_return_options = true;
                     }
                     ui.end_row();
                 }
 
-                if ui.button("reset").clicked() {
-                    worker.reset_fractal_options();
-                }
-                if ui.button("clear").clicked() {
-                    self.edited_fractal_options.clear();
+                if ui.button("revert").clicked() {
+                    self.revert_from_live_options();
                 }
                 if ui.button("apply").clicked() {
-                    self.set_fractal_options(worker);
+                    should_return_options = true;
                 }
                 ui.end_row();
-            });
-    }
 
-    fn set_fractal_options(&mut self, worker: &mut FractalWorker) {
-        // remove empty values
-        self.edited_fractal_options.retain(|_, v| !v.is_empty());
-        if !self.edited_fractal_options.is_empty() {
-            worker.set_fractal_options(&self.edited_fractal_options);
-        }
+                if should_return_options {
+                    self.get_edited_options()
+                } else {
+                    None
+                }
+            })
+            .inner
     }
 }

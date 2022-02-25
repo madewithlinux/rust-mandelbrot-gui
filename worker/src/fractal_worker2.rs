@@ -1,6 +1,6 @@
 use std::{
     cmp::min,
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     path::Path,
     sync::mpsc::{channel, Receiver},
 };
@@ -94,6 +94,9 @@ impl FractalWorker {
     pub fn get_fractal_options(&self) -> ROptionsMap {
         self.fractal_func.get_options()
     }
+    pub fn get_color_options(&self) -> ROptionsMap {
+        self.color_func.get_options()
+    }
 
     pub fn reset_fractal_options(&mut self) {
         self.reset();
@@ -107,13 +110,10 @@ impl FractalWorker {
             None,
         )
     }
-    pub fn set_fractal_options(&mut self, options: &HashMap<RString, String>) {
+    pub fn set_fractal_options(&mut self, new_options: RHashMap<RString, RString>) {
         let mut fractal_func = self.fractal_func.clone();
-        for (name, value) in options.iter() {
-            fractal_func = match self
-                .fractal_func
-                .with_option(name.as_rstr(), value.as_str().into())
-            {
+        for Tuple2(name, value) in new_options.into_iter() {
+            fractal_func = match fractal_func.with_option(name.as_rstr(), value.as_rstr()) {
                 ROk(cell_func) => cell_func,
                 RErr(msg) => {
                     println!("failed to set option {}={}: {}", name, value, msg);
@@ -123,6 +123,20 @@ impl FractalWorker {
         }
         self.reset();
         self.start_worker(fractal_func, None, None);
+    }
+    pub fn set_color_options(&mut self, new_options: RHashMap<RString, RString>) {
+        let mut color_func = self.color_func.clone();
+        for Tuple2(name, value) in new_options.into_iter() {
+            color_func = match color_func.with_option(name.as_rstr(), value.as_rstr()) {
+                ROk(cell_func) => cell_func,
+                RErr(msg) => {
+                    println!("failed to set option {}={}: {}", name, value, msg);
+                    return;
+                }
+            }
+        }
+        self.reset();
+        self.start_worker(None, color_func, None);
     }
 
     pub fn get_state(&self) -> WorkerState {
