@@ -8,11 +8,7 @@ use abi_stable::sabi_types::VersionStrings;
 use abi_stable::std_types::RArc;
 use abi_stable::std_types::RStr;
 use abi_stable::std_types::{RHashMap, RResult, RString, RVec};
-use abi_stable::{
-    sabi_trait,
-    std_types::{RBox, RSlice},
-    StableAbi,
-};
+use abi_stable::{sabi_trait, std_types::RBox, StableAbi};
 
 pub use fractal_func::RCell;
 pub use fractal_func::RChunk;

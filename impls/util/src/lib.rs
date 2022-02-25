@@ -1,3 +1,5 @@
+pub mod config_helper;
+
 use abi_stable::std_types::{RSlice, RVec, Tuple2};
 use color_func::RColor;
 use fractal_func::RChunk;

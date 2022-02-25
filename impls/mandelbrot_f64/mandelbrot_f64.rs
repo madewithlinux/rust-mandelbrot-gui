@@ -1,4 +1,4 @@
-use impl_util::compute_cells_rmp;
+use impl_util::{compute_cells_rmp, config_helper::OptionSetter};
 use num::complex::Complex64;
 use num::Zero;
 use serde::{Deserialize, Serialize};
@@ -11,7 +11,7 @@ pub struct MandelbrotData {
     pub iter: usize,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct MandelbrotCellFunc {
     width: u32,
     height: u32,
@@ -100,7 +100,7 @@ impl RFractalFunc for MandelbrotCellFunc {
             width,
             height,
             top_left,
-            ..*self
+            ..self.clone()
         }
         .into()
     }
@@ -110,7 +110,7 @@ impl RFractalFunc for MandelbrotCellFunc {
         Self {
             center: self.center + complex_offset,
             top_left: self.top_left + complex_offset,
-            ..*self
+            ..self.clone()
         }
         .into()
     }
@@ -126,20 +126,25 @@ impl RFractalFunc for MandelbrotCellFunc {
         Self {
             top_left,
             pixel_size,
-            ..*self
+            ..self.clone()
         }
         .into()
     }
 
-    fn with_option(&self, name: RStr, _value: RStr) -> RResult<RFractalFuncBox, RString> {
-        match name.as_str() {
-            "max_iter" => ROk(Self {
-                max_iter: rtry!(_value.parse().map_err(|_| "failed to parse value")),
-                ..*self
-            }
-            .into()),
-            _ => RErr("unimplemented".to_owned().into()),
-        }
+    fn with_option(&self, name: RStr, value: RStr) -> RResult<RFractalFuncBox, RString> {
+        OptionSetter::new(self, name, value)
+            .option("center_re", |s, v| {
+                let diag = s.top_left - s.center;
+                s.center.re = v;
+                s.top_left = s.center + diag;
+            })
+            .option("center_im", |s, v| {
+                let diag = s.top_left - s.center;
+                s.center.im = v;
+                s.top_left = s.center + diag;
+            })
+            .option("max_iter", |s, v| s.max_iter = v)
+            .finish()
     }
 
     fn get_options(&self) -> ROptionsMap {
