@@ -4,8 +4,10 @@ use std::{
 };
 
 use abi_stable::std_types::{RHashMap, RString, Tuple2};
+use anyhow::{Context, Result};
 use egui::{CtxRef, Ui};
 use itertools::Itertools;
+use native_dialog::FileDialog;
 use ordered_float::OrderedFloat;
 use worker::fractal_worker2::FractalWorker;
 
@@ -63,6 +65,9 @@ impl GuiState {
         ctx: &CtxRef,
         window_width: u32,
         window_height: u32,
+        frame_width: u32,
+        frame_height: u32,
+        frame: &[u8],
         worker: &mut FractalWorker,
         pan_zoom: &PanZoomDebounce,
         color_lib_path: &str,
@@ -111,6 +116,11 @@ impl GuiState {
                 ui.horizontal(|ui| {
                     if ui.button("reload lib").clicked() {
                         println!("TODO: reload library")
+                    }
+                    if ui.button("save framme").clicked() {
+                        if let Err(e) = self.save_frame(frame_width, frame_height, frame) {
+                            log::error!("error saving image: {}", e);
+                        }
                     }
                 });
             });
@@ -189,6 +199,26 @@ impl GuiState {
             .update_from_live_options(worker.get_color_options());
         if let Some(new_options) = self.color_options.options_grid(ui, "color options") {
             worker.set_color_options(new_options);
+        }
+    }
+
+    fn save_frame(&self, frame_width: u32, frame_height: u32, frame: &[u8]) -> Result<()> {
+        let frame_buf =
+            image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(frame_width, frame_height, frame)
+                .expect("pixel buffer layout bad");
+
+        let path = FileDialog::new()
+            .add_filter("PNG Image", &["png"])
+            .set_filename(&format!(
+                "fractal_{}.png",
+                chrono::Local::now().format("%F_%H-%M-%S")
+            ))
+            .show_save_single_file()?;
+
+        if let Some(path) = path {
+            frame_buf.save(path).context("failed to write output image")
+        } else {
+            Ok(())
         }
     }
 }

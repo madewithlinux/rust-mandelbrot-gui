@@ -25,7 +25,11 @@ https://docs.rs/imgui/0.8.0/imgui/
 https://docs.rs/polars/latest/polars/
 
 
-https://gpuweb.github.io/gpuweb/wgsl/#integer-types
+https://sotrh.github.io/learn-wgpu/beginner/tutorial5-textures/#a-change-to-the-vertices
+https://github.com/gfx-rs/wgpu
+https://github.com/gpuweb/gpuweb
+  https://gpuweb.github.io/gpuweb/
+  https://gpuweb.github.io/gpuweb/wgsl/#integer-types
 
 
 

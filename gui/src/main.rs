@@ -162,10 +162,12 @@ fn main(args: Args) -> Result<()> {
         match event {
             // Draw the current frame
             Event::RedrawRequested(_) => {
-                {
-                    let Extent3d { width, height, .. } = pixels.context().texture_extent;
-                    worker.draw_new_chunks(width, height, pixels.get_frame());
-                }
+                let Extent3d {
+                    width: frame_width,
+                    height: frame_height,
+                    ..
+                } = pixels.context().texture_extent;
+                worker.draw_new_chunks(frame_width, frame_height, pixels.get_frame());
 
                 // Prepare egui (including render UI)
                 framework.prepare(&window, |ctx| {
@@ -173,6 +175,9 @@ fn main(args: Args) -> Result<()> {
                         ctx,
                         window_width,
                         window_height,
+                        frame_width,
+                        frame_height,
+                        pixels.get_frame(),
                         &mut worker,
                         &pan_zoom,
                         &color_lib,
