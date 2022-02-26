@@ -9,7 +9,10 @@ use egui::{CtxRef, Ui};
 use itertools::Itertools;
 use native_dialog::FileDialog;
 use ordered_float::OrderedFloat;
-use worker::fractal_worker2::FractalWorker;
+use worker::{
+    config_manager::{self, ConfigManager},
+    fractal_worker2::FractalWorker,
+};
 
 use crate::pan_zoom_debounce::PanZoomDebounce;
 
@@ -63,6 +66,7 @@ impl GuiState {
     pub fn draw_gui(
         &mut self,
         ctx: &CtxRef,
+        config_manager: &mut ConfigManager,
         window_width: u32,
         window_height: u32,
         frame_width: u32,
@@ -115,7 +119,6 @@ impl GuiState {
 
                 ui.horizontal(|ui| {
                     if ui.button("reload lib").clicked() {
-                        // println!("TODO: reload library")
                         if let Err(e) = worker.reload_libraries() {
                             log::error!("error reloading libraries: {}", e);
                         }
@@ -123,6 +126,12 @@ impl GuiState {
                     if ui.button("save framme").clicked() {
                         if let Err(e) = self.save_frame(frame_width, frame_height, frame) {
                             log::error!("error saving image: {}", e);
+                        }
+                    }
+
+                    if ui.button("save config as").clicked() {
+                        if let Err(e) = self.save_config_as(config_manager, worker) {
+                            log::error!("error saving config: {}", e);
                         }
                     }
                 });
@@ -223,6 +232,40 @@ impl GuiState {
         } else {
             Ok(())
         }
+    }
+
+    fn save_config_as(
+        &self,
+        config_manager: &mut ConfigManager,
+        worker: &mut FractalWorker,
+    ) -> Result<()> {
+        let path = FileDialog::new()
+            .add_filter("yaml file", &["yml", "yaml"])
+            .set_filename(&format!(
+                "fractal_{}.yml",
+                chrono::Local::now().format("%F_%H-%M-%S")
+            ))
+            .show_save_single_file()?;
+
+        if let Some(path) = path {
+            config_manager.update(|config| {
+                // TODO
+                // config.chunk_size = worker.chunk_size;
+                config.fractal_config.options = worker
+                    .get_fractal_options()
+                    .into_iter()
+                    .map(|Tuple2(k, v)| (k.to_string(), v.to_string()))
+                    .collect();
+
+                config.color_config.options = worker
+                    .get_color_options()
+                    .into_iter()
+                    .map(|Tuple2(k, v)| (k.to_string(), v.to_string()))
+                    .collect();
+            });
+            config_manager.save_as(path)?;
+        }
+        Ok(())
     }
 }
 

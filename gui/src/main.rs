@@ -21,6 +21,7 @@ use winit::{
     window::WindowBuilder,
 };
 use winit_input_helper::WinitInputHelper;
+use worker::config_manager::ConfigManager;
 
 use worker::fractal_worker2::FractalWorker;
 use worker::util::measure_execution_time;
@@ -48,6 +49,9 @@ fn main(args: Args) -> Result<()> {
     let fractal_lib = args.fractal_lib;
     let color_lib = args.color_lib;
     let extra_scale_factor = args.extra_scale_factor;
+
+    let mut config_manager =
+        ConfigManager::new(window_width, window_height, &fractal_lib, &color_lib);
 
     // env_logger::init();
     env_logger::builder()
@@ -173,6 +177,7 @@ fn main(args: Args) -> Result<()> {
                 framework.prepare(&window, |ctx| {
                     gui_state.draw_gui(
                         ctx,
+                        &mut config_manager,
                         window_width,
                         window_height,
                         frame_width,

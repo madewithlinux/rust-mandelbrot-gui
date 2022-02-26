@@ -57,7 +57,7 @@ https://github.com/gpuweb/gpuweb
 - [x] save image as .png
 - [x] be able to reload the dynamic library
 - [ ] save/load config from json file (or yaml?)
-- [ ] 
+- [ ] allow for multiple fractal/color funcs in single dynamic lib (get by name)
 
 
 ## fractals

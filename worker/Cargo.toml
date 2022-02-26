@@ -19,5 +19,8 @@ log = "0.4"
 env_logger = "0.9"
 anyhow = "1"
 
-
 core_extensions = { version = "1.5", features = ["integers", "self_ops", "type_identity", "collections"]}
+
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8.1"
+tempfile = "3.3.0"
