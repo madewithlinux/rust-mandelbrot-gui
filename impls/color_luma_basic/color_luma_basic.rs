@@ -14,6 +14,7 @@ impl BasicLumaColorFunc {
             0
         };
         [luma, luma, luma]
+        // [luma, 0, 0]
     }
 }
 

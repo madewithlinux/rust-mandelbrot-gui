@@ -1,15 +1,20 @@
 use std::{
     cmp::min,
     collections::HashSet,
-    path::Path,
+    path::{Path, PathBuf},
     sync::mpsc::{channel, Receiver},
 };
 
-use abi_stable::std_types::{
-    RResult::{RErr, ROk},
-    RString,
-};
 use abi_stable::{library::RootModule, std_types::RSlice};
+use abi_stable::{
+    library::{lib_header_from_raw_library, LibraryPath, RawLibrary},
+    std_types::{
+        RResult::{RErr, ROk},
+        RString,
+    },
+    utils::leak_value,
+};
+use anyhow::Context;
 use core_extensions::SelfOps;
 use itertools::Itertools;
 use log::info;
@@ -24,6 +29,52 @@ use color_func::{
     RColor,
 };
 use fractal_func::prelude::*;
+
+///////////////////////////////////////////////////////////////////////////////
+
+/// this is similar to RootModule::load_from_file(), except that it supports reloading the module.
+/// (It still leaks the memory each time the module is loaded, though...)
+fn load_from_file<Lib: RootModule>(path: &Path) -> anyhow::Result<Lib> {
+    // copy the library to a unique path, to make sure it gets reloaded even if it was already loaded
+    let unique_name = {
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        path.with_file_name(format!(
+            "{}-{}",
+            path.file_name().unwrap().to_string_lossy(),
+            timestamp
+        ))
+    };
+    std::fs::copy(&path, &unique_name).expect("Failed to copy lib to unique path");
+    let unique_lib_path = Path::new(&unique_name).canonicalize().unwrap();
+    let raw_library = RawLibrary::load_at(&unique_lib_path)?;
+    // if the library isn't leaked
+    // it would cause any use of the module to be a use after free.
+    //
+    // By leaking the library
+    // this allows the root module loader to do anything that'd prevent
+    // sound library unloading.
+    let lib = leak_value(raw_library);
+
+    let items = unsafe { lib_header_from_raw_library(lib)? };
+
+    items.ensure_layout::<Lib>()?;
+
+    // safety: the layout was checked in the code above,
+    let ret = unsafe {
+        items
+            .init_root_module_with_unchecked_layout::<Lib>()?
+            .initialization()
+    }
+    .context("loading library")?;
+
+    // remove the file after we load it
+    std::fs::remove_file(&unique_lib_path)?;
+
+    Ok(ret)
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -54,20 +105,27 @@ pub struct FractalWorker {
     receiver: Option<Receiver<WorkerMessage>>,
     chunks: Vec<RChunk>,
     should_clear_screen: bool,
-    // external
+    // FFI
+    fractal_lib_path: PathBuf,
     fractal_lib: FractalLib_Ref,
-    color_lib: ColorLib_Ref,
     fractal_func: RFractalFuncBox,
+    color_lib_path: PathBuf,
+    color_lib: ColorLib_Ref,
     color_func: RColorFuncBox,
 }
 
 impl FractalWorker {
     pub fn new(width: u32, height: u32, fractal_lib_path: &str, color_lib_path: &str) -> Self {
-        let fractal_lib: FractalLib_Ref =
-            FractalLib_Ref::load_from_file(Path::new(fractal_lib_path))
-                .expect("failed to load fractal library");
-        let color_lib: ColorLib_Ref = ColorLib_Ref::load_from_file(Path::new(color_lib_path))
-            .expect("failed to load color library");
+        let fractal_lib_path: PathBuf = PathBuf::from(fractal_lib_path);
+        let color_lib_path: PathBuf = PathBuf::from(color_lib_path);
+
+        let fractal_lib: FractalLib_Ref = FractalLib_Ref::load_from_file(&fractal_lib_path)
+            .expect("failed to load fractal library");
+
+        // let color_lib: ColorLib_Ref = ColorLib_Ref::load_from_file(&color_lib_path)
+        //     .expect("failed to load color library");
+        let color_lib: ColorLib_Ref =
+            load_from_file(&color_lib_path).expect("failed to load color library");
         Self {
             width,
             height,
@@ -79,12 +137,25 @@ impl FractalWorker {
             chunks: vec![],
             should_clear_screen: true,
             //
+            fractal_lib_path,
             fractal_lib,
-            color_lib,
             fractal_func: fractal_lib.default_fractal_func_for_size()(width, height),
+            color_lib_path,
+            color_lib,
             color_func: color_lib.default_color_func()(),
         }
         .mutated(|s| s.start_worker(None, None, None))
+    }
+
+    pub fn reload_libraries(&mut self) -> anyhow::Result<()> {
+        // TODO: reload fractal lib also
+        self.color_lib = load_from_file(&self.color_lib_path)?;
+        self.color_func = self.color_lib.default_color_func()();
+
+        self.reset();
+        self.start_worker(None, None, None);
+
+        Ok(())
     }
 
     pub fn get_size(&self) -> (u32, u32) {

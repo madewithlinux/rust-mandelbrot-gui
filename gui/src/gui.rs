@@ -115,7 +115,10 @@ impl GuiState {
 
                 ui.horizontal(|ui| {
                     if ui.button("reload lib").clicked() {
-                        println!("TODO: reload library")
+                        // println!("TODO: reload library")
+                        if let Err(e) = worker.reload_libraries() {
+                            log::error!("error reloading libraries: {}", e);
+                        }
                     }
                     if ui.button("save framme").clicked() {
                         if let Err(e) = self.save_frame(frame_width, frame_height, frame) {

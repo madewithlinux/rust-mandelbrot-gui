@@ -14,6 +14,7 @@ https://github.com/anirudhb/reloady
   https://gist.github.com/xieyubo/6820491646f9d01980a7eadb16564ddf
 https://docs.rs/live-reload/latest/live_reload/
 https://docs.rs/dynamic_reload/latest/dynamic_reload/
+https://nullderef.com/blog/plugin-abi-stable/
 
 https://docs.rs/pixels/latest/pixels/
   https://github.com/parasyte/pixels/tree/main/examples/minimal-sdl2
