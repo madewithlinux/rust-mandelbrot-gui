@@ -119,11 +119,8 @@ impl FractalWorker {
         let fractal_lib_path: PathBuf = PathBuf::from(fractal_lib_path);
         let color_lib_path: PathBuf = PathBuf::from(color_lib_path);
 
-        let fractal_lib: FractalLib_Ref = FractalLib_Ref::load_from_file(&fractal_lib_path)
-            .expect("failed to load fractal library");
-
-        // let color_lib: ColorLib_Ref = ColorLib_Ref::load_from_file(&color_lib_path)
-        //     .expect("failed to load color library");
+        let fractal_lib: FractalLib_Ref =
+            load_from_file(&fractal_lib_path).expect("failed to load fractal library");
         let color_lib: ColorLib_Ref =
             load_from_file(&color_lib_path).expect("failed to load color library");
         Self {
@@ -148,7 +145,9 @@ impl FractalWorker {
     }
 
     pub fn reload_libraries(&mut self) -> anyhow::Result<()> {
-        // TODO: reload fractal lib also
+        self.fractal_lib = load_from_file(&self.fractal_lib_path)?;
+        self.fractal_func =
+            self.fractal_lib.default_fractal_func_for_size()(self.width, self.height);
         self.color_lib = load_from_file(&self.color_lib_path)?;
         self.color_func = self.color_lib.default_color_func()();
 

@@ -54,12 +54,23 @@ https://github.com/gpuweb/gpuweb
 - [x] use gpu shader to map prev rendered buffer to temp data in new position
 - [x] rewrite the fractal worker thread to not use a grid buf, and only update the pixel buffer as needed
 - [x] remove the old mandelbrot func
+- [x] save image as .png
+- [x] be able to reload the dynamic library
+- [ ] save/load config from json file (or yaml?)
+- [ ] 
 
 
+## fractals
+- [ ] SIMD
+- [ ] arbitrary precision
+- [ ] perturbation theory method
+- [ ] julia set
 
-- [ ] save/load config from json file
-- [ ] be able to reload the dynamic library
-  - [ ] use https://docs.rs/libloading/latest/libloading/ for loading dynamic lib?
+
+## color
+- [ ] more colormaps (simple ones like hsv, hot, etc)
+- [ ] load gradient from .png?
+- [ ] mandelbrot interior coloring?
 
 
 
