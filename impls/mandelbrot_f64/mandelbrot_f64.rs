@@ -71,9 +71,9 @@ impl MandelbrotCellFunc {
     }
 }
 
-impl Into<RFractalFuncBox> for MandelbrotCellFunc {
-    fn into(self) -> RFractalFuncBox {
-        RFractalFuncBox::from_value(self, TD_Opaque)
+impl From<MandelbrotCellFunc> for RFractalFuncBox {
+    fn from(inner: MandelbrotCellFunc) -> Self {
+        RFractalFuncBox::from_value(inner, TD_Opaque)
     }
 }
 

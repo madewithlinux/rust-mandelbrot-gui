@@ -57,7 +57,7 @@ impl GuiState {
             .into()
     }
     fn max_frame_time(&self) -> f64 {
-        self.frame_times.iter().max().unwrap().clone().into()
+        (*self.frame_times.iter().max().unwrap()).into()
     }
 
     pub fn draw_gui(
@@ -78,7 +78,7 @@ impl GuiState {
         let mut open = self.window_visible;
         egui::Window::new("fractal app")
             .open(&mut open)
-            .show(&ctx, |ui| {
+            .show(ctx, |ui| {
                 ui.label("fractal app");
 
                 ui.separator();

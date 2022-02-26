@@ -8,25 +8,12 @@ edition = "2021"
 [dependencies]
 color_func = { path = "../interface/color_func" }
 fractal_func = { path = "../interface/fractal_func" }
-# mandelbrot_f64 = { path = "../impls/mandelbrot_f64" }
 
 abi_stable = { version = "0.10.4", features = ["rust_latest_stable"] }
 
-
 itertools = "0.10"
 rayon = "1"
-# crossbeam = "0.8"
 rand = "0.8.5"
-
-# png = "0.17"
-# palette = "0.6.0"
-# rgb = "0.8"
-image = "0.24"
-# imageproc = "0.22"
-
-# ndarray = { version = "0.15.4", features = ["rayon"] }
-ultraviolet = { version = "0.8", features = [ "f64", "int" ] }
-array2d = "0.2.1"
 
 log = "0.4"
 env_logger = "0.9"

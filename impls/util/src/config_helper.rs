@@ -68,7 +68,7 @@ impl<'a, T> OptionSetter<'a, T> {
 
     pub fn option<SF, V>(self, option_name: &str, setter_func: SF) -> Self
     where
-        SF: Fn(&mut T, V) -> (),
+        SF: Fn(&mut T, V),
         V: FromStr,
         <V as FromStr>::Err: ToString,
     {
@@ -78,12 +78,12 @@ impl<'a, T> OptionSetter<'a, T> {
                 name,
                 value,
             } if name == option_name => Matched(
-                V::from_str(&value)
+                V::from_str(value)
                     .map_err(|e| format!("error parsing option {}: {}", name, e.to_string()))
-                    .and_then(move |v| {
+                    .map(move |v| {
                         let mut t = target;
                         setter_func(&mut t, v);
-                        Ok(t)
+                        t
                     }),
             ),
             _ => self,
@@ -103,7 +103,7 @@ impl<'a, T> OptionSetter<'a, T> {
                 name,
                 value,
             } if name == option_name => Matched(
-                V::from_str(&value)
+                V::from_str(value)
                     .map_err(|e| format!("error parsing option {}: {}", name, e.to_string()))
                     .and_then(move |v| {
                         let mut t = target;
@@ -117,7 +117,7 @@ impl<'a, T> OptionSetter<'a, T> {
 
     pub fn mutate<F>(self, func: F) -> Self
     where
-        F: Fn(&mut T) -> (),
+        F: Fn(&mut T),
     {
         match self {
             Matched(Ok(mut t)) => {
@@ -134,7 +134,7 @@ impl<'a, T> OptionSetter<'a, T> {
     {
         match self {
             Unmatched { name, .. } => RErr(format!("field not found: {}", name).into()),
-            Matched(res) => RResult::from(res.map(|t| t.into()).map_err(|e| RString::from(e))),
+            Matched(res) => RResult::from(res.map(|t| t.into()).map_err(RString::from)),
         }
     }
 }

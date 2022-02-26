@@ -52,6 +52,9 @@ pub struct RChunk {
     pub data: RVec<u8>,
 }
 impl RChunk {
+    pub fn is_empty(&self) -> bool {
+        self.pos_indexes.is_empty()
+    }
     pub fn len(&self) -> usize {
         self.pos_indexes.len()
     }

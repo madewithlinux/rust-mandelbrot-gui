@@ -7,7 +7,7 @@ use std::{
 
 use abi_stable::{library::RootModule, std_types::RSlice};
 use abi_stable::{
-    library::{lib_header_from_raw_library, LibraryPath, RawLibrary},
+    library::{lib_header_from_raw_library, RawLibrary},
     std_types::{
         RResult::{RErr, ROk},
         RString,
