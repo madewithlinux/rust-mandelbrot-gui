@@ -34,6 +34,7 @@ impl MandelbrotCellFunc {
         self.top_left + self.pixel_re().scale(pos[0] as f64) + self.pixel_im().scale(pos[1] as f64)
     }
 
+    #[cfg(feature = "cdylib")]
     fn default_for_size(width: u32, height: u32) -> Self {
         Self {
             width,
@@ -46,6 +47,7 @@ impl MandelbrotCellFunc {
         }
     }
 
+    #[inline]
     fn compute_cell_impl(&self, pos: [u32; 2]) -> MandelbrotData {
         let max_iterations = self.max_iter;
         let magnitude_threshold_sqr = 4.0;
@@ -78,12 +80,8 @@ impl From<MandelbrotCellFunc> for RFractalFuncBox {
 }
 
 impl RFractalFunc for MandelbrotCellFunc {
-    fn clone_self(&self) -> RFractalFuncBox {
-        todo!()
-    }
-
     fn get_size(&self) -> Tuple2<u32, u32> {
-        rtuple!(self.width, self.height)
+        Tuple2(self.width, self.height)
     }
 
     fn compute_cells(&self, positions: RSlice<[u32; 2]>) -> RChunk {

@@ -9,10 +9,7 @@ use egui::{CtxRef, Ui};
 use itertools::Itertools;
 use native_dialog::FileDialog;
 use ordered_float::OrderedFloat;
-use worker::{
-    config_manager::{self, ConfigManager},
-    fractal_worker2::FractalWorker,
-};
+use worker::{config_manager::ConfigManager, fractal_worker2::FractalWorker};
 
 use crate::pan_zoom_debounce::PanZoomDebounce;
 

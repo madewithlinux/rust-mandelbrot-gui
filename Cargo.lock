@@ -330,16 +330,11 @@ name = "color_luma_basic"
 version = "0.1.0"
 dependencies = [
  "abi_stable",
- "anyhow",
  "color_func",
- "env_logger",
  "impl_util",
- "itertools",
- "log",
  "mandelbrot_f64",
  "num",
  "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -1179,16 +1174,10 @@ name = "mandelbrot_f64"
 version = "0.1.0"
 dependencies = [
  "abi_stable",
- "anyhow",
- "color_func",
- "env_logger",
  "fractal_func",
  "impl_util",
- "itertools",
- "log",
  "num",
  "serde",
- "serde_json",
 ]
 
 [[package]]

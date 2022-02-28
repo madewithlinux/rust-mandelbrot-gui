@@ -78,8 +78,6 @@ pub type ROptionsMap = RHashMap<RString, RString>;
 
 #[sabi_trait]
 pub trait RFractalFunc: Clone + Debug + Sync + Send + 'static {
-    fn clone_self(&self) -> RFractalFuncBox;
-
     fn get_size(&self) -> Tuple2<u32, u32>;
 
     fn compute_cells(&self, positions: RSlice<[u32; 2]>) -> RChunk;

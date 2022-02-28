@@ -34,6 +34,10 @@ https://github.com/gpuweb/gpuweb
 
 
 
+https://github.com/JakeStanger/stamp
+
+
+
 # TODO
 - [x] use rayon
 - [x] split this cargo project into separate crates for host app, fractal worker, colorizer, and shared code
@@ -56,8 +60,13 @@ https://github.com/gpuweb/gpuweb
 - [x] remove the old mandelbrot func
 - [x] save image as .png
 - [x] be able to reload the dynamic library
+- [x] project template for fractal/color impl
 - [ ] save/load config from json file (or yaml?)
 - [ ] allow for multiple fractal/color funcs in single dynamic lib (get by name)
+- [ ] rebuild+reload fractal
+  - [ ] rebuild+reload button in gui
+  - [ ] config field: build command
+  - [ ] config field: files to watch and then rebuild?
 
 
 ## fractals
@@ -73,6 +82,11 @@ https://github.com/gpuweb/gpuweb
 - [ ] mandelbrot interior coloring?
 
 
+## eventually
+- [ ] user-facing documentation
+- [ ] CI build (from github action or something) that cross-compiles for various platforms
+- [ ] wasm version? (as a demo)
+- [ ] UI config screen. it opens when no CLI args and lets you select fractal and color libs
 
 
 # compile time

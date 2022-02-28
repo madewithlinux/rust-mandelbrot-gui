@@ -1,5 +1,12 @@
 # Justfile
 
+new-fractal-impl NAME:
+    stamp-templates run fractal_impl -c 'package_name={{NAME}}' -o impls/
+
+new-color-impl NAME:
+    echo TODO
+    # stamp-templates run color_impl -c 'package_name={{NAME}}' -o impls/
+
 
 build-libs:
     cargo build --release --all-features -p mandelbrot_f64
